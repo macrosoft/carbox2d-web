@@ -8,7 +8,7 @@ var Renderer = (function () {
     var GRID_STEP    = 1;
     var GRID_MAJOR_X = 100;
     var GRID_MAJOR_Y = 20;
-    var TRACK_HALF_W = 2;
+  /* TRACK_HALF_W, TRACK_THICK from config.js */
 
     function Renderer(canvas) {
         this.canvas = canvas;
@@ -38,9 +38,9 @@ var Renderer = (function () {
         this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     };
 
-    Renderer.prototype.follow = function (x, y) {
+Renderer.prototype.follow = function (x, y) {
         this.targetX = x;
-        this.targetY = y - 1;
+        this.targetY = y + CAMERA_Y_OFFSET;
     };
 
     Renderer.prototype.updateCamera = function () {
@@ -48,7 +48,7 @@ var Renderer = (function () {
         this.cameraY += (this.targetY - this.cameraY) * CAMERA_SMOOTH;
     };
 
-    Renderer.prototype.draw = function () {
+   Renderer.prototype.draw = function (box) {
         this.resize();
         this.updateCamera();
 
@@ -99,20 +99,46 @@ var Renderer = (function () {
         ctx.lineWidth = 0.5;
         ctx.strokeStyle = '#1a1a1a';
 
-        drawRotRect(ctx, toX, toY, scale, -513, 0, 0, 10, TRACK_THICK, w);
+        drawRotRect(ctx, toX, toY, scale, -513, 0, 0, 10, TRACK_THICK);
 
         for (var i = 0; i < TRACK_SEGMENTS.length; i++) {
             var seg = TRACK_SEGMENTS[i];
-            drawRotRect(ctx, toX, toY, scale, seg.x, seg.y, seg.angle, TRACK_HALF_W, TRACK_THICK, w);
+            drawRotRect(ctx, toX, toY, scale, seg.x, seg.y, seg.angle, TRACK_HALF_W, TRACK_THICK);
+        }
+
+        // ---- Тестовый бокс ----
+        if (box) {
+            this.drawBox(box, toX, toY, scale);
         }
     };
 
-    function drawRotRect(ctx, toX, toY, scale, x, y, angle, hw, hh, screenW) {
+    Renderer.prototype.drawBox = function (body, toX, toY, scale) {
+        var ctx = this.ctx;
+        var pos = body.getPosition();
+        var angle = body.getAngle();
+        var hw = scale; // box shape is 1x1, so half-width = 1
+        var hh = scale;
+
+        var sx = toX(pos.x);
+        var sy = toY(pos.y);
+
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(-angle); // Canvas Y flipped → angle negated
+
+        ctx.fillStyle = 'rgba(255, 100, 100, 0.5)';
+        ctx.strokeStyle = '#ff3333';
+        ctx.lineWidth = 2;
+        ctx.fillRect(-hw, -hh, hw * 2, hh * 2);
+        ctx.strokeRect(-hw, -hh, hw * 2, hh * 2);
+        ctx.restore();
+    };
+
+    function drawRotRect(ctx, toX, toY, scale, x, y, angle, hw, hh) {
         var sx = toX(x);
-        if (sx + hw * scale < -50 || sx - hw * scale > screenW + 50) return;
         var sy = toY(y);
-        var rw  = hw * 2 * scale;
-        var rh  = hh * 2 * scale;
+        var rw = hw * 2 * scale;
+        var rh = hh * 2 * scale;
 
         ctx.save();
         ctx.translate(sx, sy);

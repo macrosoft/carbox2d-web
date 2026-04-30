@@ -1,28 +1,39 @@
 (function () {
 
-    var canvas   = document.getElementById('gameCanvas');
+    var canvas = document.getElementById('gameCanvas');
     var renderer = new Renderer(canvas);
+    var world = new World();
 
     window.addEventListener('resize', function () {
         renderer.resize();
     });
 
-    // Начальная позиция камеры — в начале дороги (без анимации)
-    renderer.setCamera(-490, 2);
+    // Camera starts at box position
+    renderer.setCamera(world.getBoxPos().x, world.getBoxPos().y + CAMERA_Y_OFFSET);
 
-    function frame() {
-        renderer.draw();
+    var lastTick = null;
+    var accumulator = 0;
+
+    function frame(timestamp) {
+        if (lastTick === null) lastTick = timestamp;
+        var dt = (timestamp - lastTick) / 1000;
+        lastTick = timestamp;
+
+        // Prevent spiral of death on lag frames
+        if (dt > 0.1) dt = 0.1;
+        accumulator += dt;
+
+        // Fixed timestep physics loop
+        while (accumulator >= TIME_STEP) {
+            world.step();
+            accumulator -= TIME_STEP;
+        }
+
+        var pos = world.getBoxPos();
+        renderer.follow(pos.x, pos.y);
+        renderer.draw(world.box);
         requestAnimationFrame(frame);
     }
-
-    // Стрелки для перемещения камеры
-    document.addEventListener('keydown', function (e) {
-        var speed = 20;
-        if (e.key === 'ArrowRight')  renderer.targetX += speed;
-        if (e.key === 'ArrowLeft')   renderer.targetX  -= speed;
-        if (e.key === 'ArrowUp')     renderer.targetY  += speed;
-        if (e.key === 'ArrowDown')   renderer.targetY  -= speed;
-    });
 
     requestAnimationFrame(frame);
 
