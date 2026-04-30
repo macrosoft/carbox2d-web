@@ -7,13 +7,13 @@
         renderer.resize();
     });
 
-    // Async: load track data → init world → start loop
     TrackLoader.load().then(function (track) {
         World.load(track);
         Renderer.setTrackData(track);
 
-        var world = new World.World();
-        renderer.setCamera(world.getBoxPos().x, world.getBoxPos().y + CAMERA_Y_OFFSET);
+        var chromo = Chromosome.generate();
+        var world = new World.World(chromo);
+        renderer.setCamera(world.getChassisPos().x, world.getChassisPos().y + CAMERA_Y_OFFSET);
 
         var lastTick = null;
         var accumulator = 0;
@@ -23,19 +23,17 @@
             var dt = (timestamp - lastTick) / 1000;
             lastTick = timestamp;
 
-            // Prevent spiral of death on lag frames
             if (dt > 0.1) dt = 0.1;
             accumulator += dt;
 
-            // Fixed timestep physics loop
             while (accumulator >= TIME_STEP) {
                 world.step();
                 accumulator -= TIME_STEP;
             }
 
-            var pos = world.getBoxPos();
+            var pos = world.getChassisPos();
             renderer.follow(pos.x, pos.y);
-            renderer.draw(world.box);
+            renderer.draw(world.chassis);
             requestAnimationFrame(frame);
         }
 

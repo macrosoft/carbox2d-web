@@ -6,6 +6,13 @@ An evolution simulator for cars, inspired by [boxcar2d.com](http://boxcar2d.com)
 
 **[https://macrosoft.github.io/carbox2d-web/](https://macrosoft.github.io/carbox2d-web/)**
 
+## Features
+
+- Pre-computed binary track data (Float32LE, 6000 bytes) for fast loading
+- Random chassis generation: 8 triangular segments with random angles and magnitudes
+- HSL-colored chassis body, unique on every restart
+- Smooth camera tracking with fixed-timestep physics
+
 ## Tech Stack
 
 - Vanilla JavaScript (no bundlers, no modules)

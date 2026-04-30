@@ -11,8 +11,6 @@ var Renderer = (function () {
     var _trackCount = 0;
     var _trackData = null;
 
-    /* TRACK_HALF_W, TRACK_THICK from config.js */
-
     function setTrackData(track) {
         _trackCount = track.count;
         _trackData = track.data;
@@ -56,7 +54,7 @@ var Renderer = (function () {
         this.cameraY += (this.targetY - this.cameraY) * CAMERA_SMOOTH;
     };
 
-    Renderer.prototype.draw = function (box) {
+    Renderer.prototype.draw = function (chassis) {
         this.resize();
         this.updateCamera();
 
@@ -73,11 +71,10 @@ var Renderer = (function () {
         var toX = function (wx) { return wx * scale - cx + w / 2; };
         var toY = function (wy) { return -wy * scale + cy + h / 2; };
 
-        // ---- Фон ----
         ctx.fillStyle = COLOR_BG;
         ctx.fillRect(0, 0, w, h);
 
-        // ---- Сетка ----
+        // Grid
         var worldLeft   = Math.floor((camX - w / 2) / GRID_STEP) * GRID_STEP;
         var worldRight  = Math.ceil((camX + w / 2) / GRID_STEP) * GRID_STEP;
         var worldBottom = Math.floor((camY - h / 2) / GRID_STEP) * GRID_STEP;
@@ -103,7 +100,7 @@ var Renderer = (function () {
             ctx.stroke();
         }
 
-        // ---- Дорога ----
+        // Track
         ctx.lineWidth = 0.5;
         ctx.strokeStyle = '#1a1a1a';
 
@@ -111,37 +108,45 @@ var Renderer = (function () {
 
         for (var i = 0; i < _trackCount; i++) {
             var base = i * 3;
-            var segX = _trackData[base];
-            var segY = _trackData[base + 1];
-            var segAngle = _trackData[base + 2];
-            drawRotRect(ctx, toX, toY, scale, segX, segY, segAngle, TRACK_HALF_W, TRACK_THICK);
+            drawRotRect(ctx, toX, toY, scale, _trackData[base], _trackData[base + 1], _trackData[base + 2], TRACK_HALF_W, TRACK_THICK);
         }
 
-        // ---- Тестовый бокс ----
-        if (box) {
-            this.drawBox(box, toX, toY, scale);
+        // Chassis
+        if (chassis) {
+            this.drawChassis(chassis, toX, toY, scale);
         }
     };
 
-    Renderer.prototype.drawBox = function (body, toX, toY, scale) {
+    Renderer.prototype.drawChassis = function (body, toX, toY, scale) {
         var ctx = this.ctx;
         var pos = body.getPosition();
         var angle = body.getAngle();
-        var hw = scale; // box shape is 1x1, so half-width = 1
-        var hh = scale;
 
         var sx = toX(pos.x);
         var sy = toY(pos.y);
 
         ctx.save();
         ctx.translate(sx, sy);
-        ctx.rotate(-angle); // Canvas Y flipped → angle negated
+        ctx.rotate(-angle);
 
-        ctx.fillStyle = 'rgba(255, 100, 100, 0.5)';
-        ctx.strokeStyle = '#ff3333';
-        ctx.lineWidth = 2;
-        ctx.fillRect(-hw, -hh, hw * 2, hh * 2);
-        ctx.strokeRect(-hw, -hh, hw * 2, hh * 2);
+        var fill = 'hsla(' + body.color.h + ', ' + body.color.s + '%, ' + body.color.l + '%, 0.6)';
+        var stroke = 'hsl(' + body.color.h + ', ' + body.color.s + '%, ' + body.color.l + '%)';
+
+        ctx.lineWidth = 1.5;
+
+        for (var i = 0; i < body.triangles.length; i++) {
+            var tri = body.triangles[i];
+            ctx.beginPath();
+            ctx.moveTo(tri[0][0] * scale, -tri[0][1] * scale);
+            ctx.lineTo(tri[1][0] * scale, -tri[1][1] * scale);
+            ctx.lineTo(tri[2][0] * scale, -tri[2][1] * scale);
+            ctx.closePath();
+            ctx.fillStyle = fill;
+            ctx.fill();
+            ctx.strokeStyle = stroke;
+            ctx.stroke();
+        }
+
         ctx.restore();
     };
 

@@ -11,6 +11,14 @@
 
 ## Rendering
 - Use standard HTML5 Canvas API (or WebGL if chosen) instead of OpenGL.
+- Chassis is rendered as 8 colored triangles (triangle fan) with HSL color from chromosome.
+
+## Chassis (Random)
+- Chassis body is composed of 8 triangular segments forming a fan shape.
+- Each segment has random angle (min 0.08 rad, sum = 2π) and magnitude (0.3-3.0m).
+- Each restart generates a new random chassis.
+- Physics: density=2, friction=10, restitution=0.05.
+- `js/chromosome.js` — gene generation (angles, mags, hue/sat/lit).
 
 ## Track Data Format (Deviation from Original)
 - Original C++ stored track segments as `std::vector` of objects at runtime with on-demand generation.
