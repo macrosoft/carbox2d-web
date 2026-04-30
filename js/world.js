@@ -1,4 +1,12 @@
 var World = (function () {
+    var _trackCount = 0;
+    var _trackData = null; // Float32Array: [x, y, angle, x, y, angle, ...]
+
+    function loadTrack(track) {
+        _trackCount = track.count;
+        _trackData = track.data;
+    }
+
     function World() {
         this.world = new planck.World({
             gravity: planck.Vec2(0, -15),
@@ -15,11 +23,14 @@ var World = (function () {
             { density: 0, friction: 10, restitution: 0 }
         );
 
-        // 500 terrain segments
-        for (var i = 0; i < TRACK_SEGMENTS.length; i++) {
-            var seg = TRACK_SEGMENTS[i];
+        // 500 terrain segments from binary data
+        for (var i = 0; i < _trackCount; i++) {
+            var base = i * 3;
+            var x = _trackData[base];
+            var y = _trackData[base + 1];
+            var angle = _trackData[base + 2];
             this.trackBody.createFixture(
-                new planck.BoxShape(TRACK_HALF_W, TRACK_THICK, planck.Vec2(seg.x, seg.y), seg.angle),
+                new planck.BoxShape(TRACK_HALF_W, TRACK_THICK, planck.Vec2(x, y), angle),
                 { density: 0, friction: 10, restitution: 0 }
             );
         }
@@ -43,5 +54,5 @@ var World = (function () {
         return { x: p.x, y: p.y };
     };
 
-    return World;
+    return { load: loadTrack, World: World };
 })();

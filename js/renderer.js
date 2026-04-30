@@ -8,7 +8,15 @@ var Renderer = (function () {
     var GRID_STEP    = 1;
     var GRID_MAJOR_X = 100;
     var GRID_MAJOR_Y = 20;
-  /* TRACK_HALF_W, TRACK_THICK from config.js */
+    var _trackCount = 0;
+    var _trackData = null;
+
+    /* TRACK_HALF_W, TRACK_THICK from config.js */
+
+    function setTrackData(track) {
+        _trackCount = track.count;
+        _trackData = track.data;
+    }
 
     function Renderer(canvas) {
         this.canvas = canvas;
@@ -38,7 +46,7 @@ var Renderer = (function () {
         this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     };
 
-Renderer.prototype.follow = function (x, y) {
+    Renderer.prototype.follow = function (x, y) {
         this.targetX = x;
         this.targetY = y + CAMERA_Y_OFFSET;
     };
@@ -48,7 +56,7 @@ Renderer.prototype.follow = function (x, y) {
         this.cameraY += (this.targetY - this.cameraY) * CAMERA_SMOOTH;
     };
 
-   Renderer.prototype.draw = function (box) {
+    Renderer.prototype.draw = function (box) {
         this.resize();
         this.updateCamera();
 
@@ -101,9 +109,12 @@ Renderer.prototype.follow = function (x, y) {
 
         drawRotRect(ctx, toX, toY, scale, -513, 0, 0, 10, TRACK_THICK);
 
-        for (var i = 0; i < TRACK_SEGMENTS.length; i++) {
-            var seg = TRACK_SEGMENTS[i];
-            drawRotRect(ctx, toX, toY, scale, seg.x, seg.y, seg.angle, TRACK_HALF_W, TRACK_THICK);
+        for (var i = 0; i < _trackCount; i++) {
+            var base = i * 3;
+            var segX = _trackData[base];
+            var segY = _trackData[base + 1];
+            var segAngle = _trackData[base + 2];
+            drawRotRect(ctx, toX, toY, scale, segX, segY, segAngle, TRACK_HALF_W, TRACK_THICK);
         }
 
         // ---- Тестовый бокс ----
@@ -149,6 +160,6 @@ Renderer.prototype.follow = function (x, y) {
         ctx.restore();
     }
 
-    return Renderer;
+    return { setTrackData: setTrackData, Renderer: Renderer };
 
 })();

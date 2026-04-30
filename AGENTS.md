@@ -12,6 +12,14 @@
 ## Rendering
 - Use standard HTML5 Canvas API (or WebGL if chosen) instead of OpenGL.
 
+## Track Data Format (Deviation from Original)
+- Original C++ stored track segments as `std::vector` of objects at runtime with on-demand generation.
+- Web version uses pre-computed binary track data in `js/track_data.bin` (6000 bytes, Float32LE: `x, y, angle` per segment × 500 segments).
+- Loading is async via `TrackLoader.load()` → returns `{count, data: Float32Array}`.
+- Original `config.js` contained `TRACK_SEGMENTS` array (37KB JSON). It was replaced with binary format to reduce parsing overhead and payload size.
+- Track data is in `js/track_data.bin`. To regenerate, a Node.js script writes Float32LE.
+- Modules consume binary data via `TrackLoader.load()` promise. The game loop starts after track loading completes.
+
 ## Git
 - **NEVER** commit or push without explicit user permission.
 - The user decides when to commit. Only edit code.
