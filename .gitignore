@@ -1,0 +1,5 @@
+node_modules/
+*.log
+trackdata.txt
+legacy_cpp/
+@docs/
