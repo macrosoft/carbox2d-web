@@ -125,12 +125,32 @@ var Renderer = (function () {
         var sx = toX(pos.x);
         var sy = toY(pos.y);
 
+        var fill = 'hsla(' + body.color.h + ', ' + body.color.s + '%, ' + body.color.l + '%, 0.6)';
+        var stroke = 'hsl(' + body.color.h + ', ' + body.color.s + '%, ' + body.color.l + '%)';
+
+        // Draw dynamic axles in world space first
+        if (body.axles) {
+            body.axles.forEach(function(axle) {
+                var aPos = axle.getPosition();
+                var aAngle = axle.getAngle();
+                var ax = toX(aPos.x);
+                var ay = toY(aPos.y);
+                
+                ctx.save();
+                ctx.translate(ax, ay);
+                ctx.rotate(-aAngle);
+                ctx.fillStyle = fill;
+                // Offset by -0.3 along the local axle axis to match the physics shape
+                ctx.fillRect(-0.3 * scale - 0.2 * scale, -0.05 * scale, 0.4 * scale, 0.1 * scale);
+                ctx.strokeStyle = stroke;
+                ctx.strokeRect(-0.3 * scale - 0.2 * scale, -0.05 * scale, 0.4 * scale, 0.1 * scale);
+                ctx.restore();
+            });
+        }
+
         ctx.save();
         ctx.translate(sx, sy);
         ctx.rotate(-angle);
-
-        var fill = 'hsla(' + body.color.h + ', ' + body.color.s + '%, ' + body.color.l + '%, 0.6)';
-        var stroke = 'hsl(' + body.color.h + ', ' + body.color.s + '%, ' + body.color.l + '%)';
 
         ctx.lineWidth = 1.5;
 
@@ -167,7 +187,7 @@ var Renderer = (function () {
         }
         ctx.stroke();
 
-        // Draw suspension mounts
+        // Draw suspension mounts (static parts on chassis)
         var fixture = body.getFixtureList();
         while (fixture) {
             var shape = fixture.getShape();

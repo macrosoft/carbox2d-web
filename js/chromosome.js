@@ -36,10 +36,15 @@ var Chromosome = (function () {
         }
         // Wheel placement: for each of 8 slots, which segment is it on (-1 = none)
         var wheelOn = [];
+        var availableSegments = [0, 1, 2, 3, 4, 5, 6, 7];
+        
         for (var i = 0; i < NUM_SEGMENTS; i++) {
             var prob = Math.random();
-            if (prob > 0.7) { // 30% chance of wheel in this slot
-                wheelOn.push(Math.floor(Math.random() * NUM_SEGMENTS));
+            if (prob > 0.5 && availableSegments.length > 0) { // 50% chance of wheel
+                var randIdx = Math.floor(Math.random() * availableSegments.length);
+                var segIdx = availableSegments[randIdx];
+                wheelOn.push(segIdx);
+                availableSegments.splice(randIdx, 1);
             } else {
                 wheelOn.push(-1);
             }

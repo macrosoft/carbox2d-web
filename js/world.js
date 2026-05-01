@@ -32,7 +32,7 @@ var World = (function () {
         // Chassis: 8 triangle segments from random chromosome
         this.chassis = this.world.createBody({
             type: 'dynamic',
-            position: planck.Vec2(-490, 5),
+            position: planck.Vec2(-500, 4),
             allowSleep: false,
             bullet: true
         });
@@ -55,9 +55,11 @@ var World = (function () {
             );
         }
 
-        this.startPos = planck.Vec2(-490, 5);
+        this.startPos = planck.Vec2(-500, 4);
 
-        // Create suspension mounts (axle fixtures) on the chassis
+        // Create suspension mounts (axle fixtures) and dynamic axles
+        this.chassis.axles = [];
+        this.chassis.springs = [];
         for (var i = 0; i < chromo.wheelOn.length; i++) {
             var segIdx = chromo.wheelOn[i];
             if (segIdx === -1) continue;
@@ -68,10 +70,38 @@ var World = (function () {
             var py = mag * Math.sin(angle);
             var axleAngle = chromo.axleAngles[i];
 
+            // Static mount on chassis
             this.chassis.createFixture(
                 new planck.BoxShape(0.2, 0.1, planck.Vec2(px, py), axleAngle),
                 { density: 2, friction: 10, restitution: 0.05 }
             );
+
+            // Dynamic axle body
+            var worldAnchor = this.chassis.getWorldPoint(planck.Vec2(px, py));
+            var axleBody = this.world.createBody({
+                type: 'dynamic',
+                position: worldAnchor,
+                angle: axleAngle
+            });
+
+            // Axle physical shape: offset by -0.3 along the local axis as per legacy code
+            axleBody.createFixture(
+                new planck.BoxShape(0.2, 0.05, planck.Vec2(-0.3, 0), 0),
+                { density: 20, friction: 10, restitution: 0.05 }
+            );
+
+            // Prismatic Joint to simulate the spring axis
+            var worldAnchor = this.chassis.getWorldPoint(planck.Vec2(px, py));
+            var joint = this.world.createJoint(new planck.PrismaticJoint({
+                lowerTranslation: -0.1,
+                upperTranslation: 0.25,
+                enableLimit: true,
+                enableMotor: true,
+                collideConnected: false
+            }, this.chassis, axleBody, worldAnchor, planck.Vec2(Math.cos(axleAngle), Math.sin(axleAngle))));
+
+            this.chassis.axles.push(axleBody);
+            this.chassis.springs.push(joint);
         }
 
         // Attach rendering data to chassis body
@@ -80,6 +110,15 @@ var World = (function () {
     }
 
     World.prototype.step = function () {
+        // Update spring-damper physics for axles
+        var baseSpringForce = 7.5 * this.chassis.getMass();
+        for (var i = 0; i < this.chassis.springs.length; i++) {
+            var joint = this.chassis.springs[i];
+            var translation = joint.getJointTranslation();
+            joint.setMaxMotorForce(baseSpringForce + 40 * baseSpringForce * translation * translation);
+            joint.setMotorSpeed(-20 * translation);
+        }
+
         this.world.step(TIME_STEP, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
     };
 
