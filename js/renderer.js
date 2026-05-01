@@ -167,6 +167,25 @@ var Renderer = (function () {
         }
         ctx.stroke();
 
+        // Draw suspension mounts
+        var fixture = body.getFixtureList();
+        while (fixture) {
+            var shape = fixture.getShape();
+            if (shape.m_vertices && shape.m_vertices.length === 4) {
+                ctx.beginPath();
+                ctx.moveTo(shape.m_vertices[0].x * scale, -shape.m_vertices[0].y * scale);
+                for (var vIdx = 1; vIdx < 4; vIdx++) {
+                    ctx.lineTo(shape.m_vertices[vIdx].x * scale, -shape.m_vertices[vIdx].y * scale);
+                }
+                ctx.closePath();
+                ctx.fillStyle = fill;
+                ctx.fill();
+                ctx.strokeStyle = stroke;
+                ctx.stroke();
+            }
+            fixture = fixture.getNext();
+        }
+
         ctx.restore();
     };
 

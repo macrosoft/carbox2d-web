@@ -34,9 +34,28 @@ var Chromosome = (function () {
         for (var i = 0; i < NUM_SEGMENTS; i++) {
             mags.push(MIN_MAG + Math.random() * (MAX_MAG - MIN_MAG));
         }
+        // Wheel placement: for each of 8 slots, which segment is it on (-1 = none)
+        var wheelOn = [];
+        for (var i = 0; i < NUM_SEGMENTS; i++) {
+            var prob = Math.random();
+            if (prob > 0.7) { // 30% chance of wheel in this slot
+                wheelOn.push(Math.floor(Math.random() * NUM_SEGMENTS));
+            } else {
+                wheelOn.push(-1);
+            }
+        }
+
+        // Axle angles for the 8 slots
+        var axleAngles = [];
+        for (var i = 0; i < NUM_SEGMENTS; i++) {
+            axleAngles.push(Math.random() * 2 * Math.PI);
+        }
+
         return {
             angles: angles,
             mags: mags,
+            wheelOn: wheelOn,
+            axleAngles: axleAngles,
             segments: NUM_SEGMENTS,
             hue: Math.random() * 360,
             sat: 70 + Math.random() * 30,

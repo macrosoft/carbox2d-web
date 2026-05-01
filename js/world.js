@@ -57,6 +57,23 @@ var World = (function () {
 
         this.startPos = planck.Vec2(-490, 5);
 
+        // Create suspension mounts (axle fixtures) on the chassis
+        for (var i = 0; i < chromo.wheelOn.length; i++) {
+            var segIdx = chromo.wheelOn[i];
+            if (segIdx === -1) continue;
+
+            var angle = chromo.angles[segIdx];
+            var mag = chromo.mags[segIdx];
+            var px = mag * Math.cos(angle);
+            var py = mag * Math.sin(angle);
+            var axleAngle = chromo.axleAngles[i];
+
+            this.chassis.createFixture(
+                new planck.BoxShape(0.2, 0.1, planck.Vec2(px, py), axleAngle),
+                { density: 2, friction: 10, restitution: 0.05 }
+            );
+        }
+
         // Attach rendering data to chassis body
         this.chassis.vertices = this.vertices;
         this.chassis.color = { h: chromo.hue, s: chromo.sat, l: chromo.lit };
