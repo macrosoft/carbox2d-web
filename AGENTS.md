@@ -2,6 +2,7 @@
 
 ## Physics (Planck.js)
 - We use `planck.js`, not the original `Box2D`.
+- Documentation: `docs/planck.d.ts`
 - Planck.js dropped the `b2` prefix. Use `planck.World`, `planck.Body`, `planck.Vec2` instead of `b2World`, `b2Body`, `b2Vec2`.
 - Methods use `lowerCamelCase` (e.g., `world.createBody()`, not `CreateBody()`).
 - Definition objects (BodyDef, FixtureDef) in Planck.js are replaced with plain JS objects.
@@ -27,6 +28,9 @@
 - Original `config.js` contained `TRACK_SEGMENTS` array (37KB JSON). It was replaced with binary format to reduce parsing overhead and payload size.
 - Track data is in `js/track_data.bin`. To regenerate, a Node.js script writes Float32LE.
 - Modules consume binary data via `TrackLoader.load()` promise. The game loop starts after track loading completes.
+
+## Legacy Project
+- Original C++ source code is located in the `legacy_cpp` folder.
 
 ## Git
 - **NEVER** commit or push without explicit user permission.
