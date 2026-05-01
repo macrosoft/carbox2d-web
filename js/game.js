@@ -29,6 +29,13 @@
             while (accumulator >= TIME_STEP) {
                 world.step();
                 accumulator -= TIME_STEP;
+
+                if (world.isStopped()) {
+                    world.reset();
+                    renderer.setCamera(world.getChassisPos().x, world.getChassisPos().y + CAMERA_Y_OFFSET);
+                    accumulator = 0;
+                    break;
+                }
             }
 
             var pos = world.getChassisPos();

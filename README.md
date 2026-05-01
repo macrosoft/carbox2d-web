@@ -13,6 +13,9 @@ An evolution simulator for cars, inspired by [boxcar2d.com](http://boxcar2d.com)
 - Procedural suspension: dynamic axles with spring-damper physics and motorized wheels
 - HSL-colored chassis body, unique on every restart
 - Smooth camera tracking with fixed-timestep physics
+- HUD overlay: score (bottom-center), time/torque/speed (top-right) in red
+- Auto-restart on stop conditions: time expiry (5 min), stuck detection (3–5 sec stall), track end, or backward roll
+- Deterministic restart: same car re-runs on each reset for debugging
 
 ## Tech Stack
 

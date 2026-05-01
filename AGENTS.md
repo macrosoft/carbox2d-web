@@ -26,7 +26,7 @@
   - Connected to axle via `RevoluteJoint` with motor.
   - Radius: random (0.1-1.5m).
   - Collision: all car parts ignore each other (via `filterCategoryBits`/`filterMaskBits`) and only collide with the track.
-- Spawn position: `(-500, 4)`.
+- Spawn position: `(-500, 5)`.
 
 ## Rendering
 - Use standard HTML5 Canvas API (or WebGL if chosen) instead of OpenGL.
@@ -36,10 +36,13 @@
 - Camera offset (`CAMERA_Y_OFFSET = 3` in `js/config.js`) pushes the view up on screen, leaving room for future graphs at the bottom.
 
 ## Game State (js/world.js)
-- `World` constructor tracks: `iteration` (physics step count), `maxPosition` (score, distance from spawn X, starts at 0, only grows), `torque` (computed from formula: `mass * 1.5 * 15 / 2^(wheels-1)`).
+- `World` constructor tracks: `iteration` (physics step count), `maxPosition` (score, distance from spawn X, starts at 0, only grows), `torque` (computed from formula: `mass * 1.5 * 15 / 2^(wheels-1)`), `slow` (stall counter), `prevDist` (for stuck detection), `stopped` (flag).
+- Chromosome saved as `this.chromo` for deterministic restart.
+- Helper functions: `buildTrack`, `createCar` (used by both constructor and `reset`).
 - `CONSTANTS`: `TRACK_LENGTH = 1500`, `MAX_ITERATION = 18000` (5 min at 60fps).
-- `step()`: increments iteration, updates maxPosition, applies torque to each wheel motor.
-- Getters: `getScore()` (capped at TRACK_LENGTH), `getSpeed()` (velocity magnitude), `getTorque()`, `getTime()` (elapsed seconds), `getRemainingTime()` (countdown).
+- `step()`: performs physics step, then checks stop conditions via stuck detection: if distance didn't advance by 1m, stall counter increments (cap: 180 ticks if score < 10, 300 ticks if >= 10). Also stops at track end, time expiry, or backward roll (>10m). Resets automatically via `world.reset()` in game loop.
+- `reset()`: creates a new `planck.World` + track + identical car (same chromo), resets all counters.
+- Getters: `getScore()` (capped at TRACK_LENGTH), `getSpeed()` (velocity magnitude), `getTorque()`, `getTime()` (elapsed seconds), `getRemainingTime()` (countdown), `isStopped()`.
 
 ## HUD (js/hud.js)
 - HTML overlay (`<div>` with `pointer-events: none`), lazy-initialized on first `update()` call.
