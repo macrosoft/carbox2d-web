@@ -148,6 +148,38 @@ var Renderer = (function () {
             });
         }
 
+        // Draw wheels
+        if (body.wheels) {
+            body.wheels.forEach(function(wheel) {
+                var wPos = wheel.body.getPosition();
+                var wAngle = wheel.body.getAngle();
+                var wx = toX(wPos.x);
+                var wy = toY(wPos.y);
+                var wr = wheel.radius * scale;
+
+                ctx.save();
+                ctx.translate(wx, wy);
+                ctx.rotate(-wAngle);
+
+                ctx.beginPath();
+                ctx.arc(0, 0, wr, 0, 2 * Math.PI);
+                ctx.fillStyle = COLOR_TRACK;
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // Rotation radius
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(wr, 0);
+                ctx.strokeStyle = '#000';
+                ctx.stroke();
+
+                ctx.restore();
+            });
+        }
+
         ctx.save();
         ctx.translate(sx, sy);
         ctx.rotate(-angle);

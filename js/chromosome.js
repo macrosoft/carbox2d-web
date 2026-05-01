@@ -56,11 +56,18 @@ var Chromosome = (function () {
             axleAngles.push(Math.random() * 2 * Math.PI);
         }
 
+        // Wheel radii for the 8 slots
+        var wheelRadii = [];
+        for (var i = 0; i < NUM_SEGMENTS; i++) {
+            wheelRadii.push(0.1 + Math.random() * (1.5 - 0.1));
+        }
+
         return {
             angles: angles,
             mags: mags,
             wheelOn: wheelOn,
             axleAngles: axleAngles,
+            wheelRadii: wheelRadii,
             segments: NUM_SEGMENTS,
             hue: Math.random() * 360,
             sat: 70 + Math.random() * 30,

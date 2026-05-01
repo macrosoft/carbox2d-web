@@ -9,7 +9,7 @@ const TRACK_THICK = 0.15;
 // Physics
 const TIME_STEP = 1 / 60;
 const VELOCITY_ITERATIONS = 8;
-const POSITION_ITERATIONS = 3;
+const POSITION_ITERATIONS = 8;
 const CAMERA_Y_OFFSET = -1;
 const TRACK_HALF_W = 2;
 

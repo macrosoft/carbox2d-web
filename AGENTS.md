@@ -22,12 +22,17 @@
   - Mount consists of a static `BoxShape` on chassis and a dynamic `axle` body.
   - Connection: `PrismaticJoint` with limits (-0.1, 0.25) and a custom spring-damper motor logic in `World.step`.
   - Axle visual/physical offset: -0.3 units along axle axis.
+- Wheels:
+  - Connected to axle via `RevoluteJoint` with motor.
+  - Radius: random (0.1-1.5m).
+  - Collision: all car parts ignore each other (via `filterCategoryBits`/`filterMaskBits`) and only collide with the track.
 - Spawn position: `(-500, 4)`.
 
 ## Rendering
 - Use standard HTML5 Canvas API (or WebGL if chosen) instead of OpenGL.
 - Chassis is rendered as 8 colored triangles (triangle fan) with HSL color from chromosome.
 - Axles are rendered as rotated rectangles matching the chassis color.
+- Wheels are rendered as dark circles with a rotation radius line.
 
 ## Track Data Format (Deviation from Original)
 - Original C++ stored track segments as `std::vector` of objects at runtime with on-demand generation.

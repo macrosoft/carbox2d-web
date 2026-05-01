@@ -16,16 +16,21 @@ var World = (function () {
 
         this.trackBody = this.world.createBody({ type: 'static', position: planck.Vec2(0, 0) });
 
+        var trackFilter = {
+            filterCategoryBits: 0x0002,
+            filterMaskBits: 0x0001
+        };
+
         this.trackBody.createFixture(
             new planck.BoxShape(10, TRACK_THICK, planck.Vec2(-513, 0), 0),
-            { density: 0, friction: 10, restitution: 0 }
+            { density: 0, friction: 10, restitution: 0, ...trackFilter }
         );
 
         for (var i = 0; i < _trackCount; i++) {
             var base = i * 3;
             this.trackBody.createFixture(
                 new planck.BoxShape(TRACK_HALF_W, TRACK_THICK, planck.Vec2(_trackData[base], _trackData[base + 1]), _trackData[base + 2]),
-                { density: 0, friction: 10, restitution: 0 }
+                { density: 0, friction: 10, restitution: 0, ...trackFilter }
             );
         }
 
@@ -40,6 +45,12 @@ var World = (function () {
         // Store vertices for rendering: center [0,0] and 8 outer points
         this.vertices = [[0, 0]];
 
+        var carFilter = {
+            filterCategoryBits: 0x0001,
+            filterMaskBits: 0x0002,
+            filterGroupIndex: -1
+        };
+
         for (var i = 0; i < chromo.segments; i++) {
             var p1x = chromo.mags[i] * Math.cos(chromo.angles[i]);
             var p1y = chromo.mags[i] * Math.sin(chromo.angles[i]);
@@ -51,7 +62,7 @@ var World = (function () {
 
             this.chassis.createFixture(
                 new planck.PolygonShape([planck.Vec2(0, 0), planck.Vec2(p1x, p1y), planck.Vec2(p2x, p2y)]),
-                { density: 2, friction: 10, restitution: 0.05 }
+                { density: 2, friction: 10, restitution: 0.05, ...carFilter }
             );
         }
 
@@ -60,6 +71,7 @@ var World = (function () {
         // Create suspension mounts (axle fixtures) and dynamic axles
         this.chassis.axles = [];
         this.chassis.springs = [];
+        this.chassis.wheels = [];
         for (var i = 0; i < chromo.wheelOn.length; i++) {
             var segIdx = chromo.wheelOn[i];
             if (segIdx === -1) continue;
@@ -73,7 +85,7 @@ var World = (function () {
             // Static mount on chassis
             this.chassis.createFixture(
                 new planck.BoxShape(0.2, 0.1, planck.Vec2(px, py), axleAngle),
-                { density: 2, friction: 10, restitution: 0.05 }
+                { density: 2, friction: 10, restitution: 0.05, ...carFilter }
             );
 
             // Dynamic axle body
@@ -87,11 +99,10 @@ var World = (function () {
             // Axle physical shape: offset by -0.3 along the local axis as per legacy code
             axleBody.createFixture(
                 new planck.BoxShape(0.2, 0.05, planck.Vec2(-0.3, 0), 0),
-                { density: 20, friction: 10, restitution: 0.05 }
+                { density: 20, friction: 10, restitution: 0.05, ...carFilter }
             );
 
             // Prismatic Joint to simulate the spring axis
-            var worldAnchor = this.chassis.getWorldPoint(planck.Vec2(px, py));
             var joint = this.world.createJoint(new planck.PrismaticJoint({
                 lowerTranslation: -0.1,
                 upperTranslation: 0.25,
@@ -102,6 +113,31 @@ var World = (function () {
 
             this.chassis.axles.push(axleBody);
             this.chassis.springs.push(joint);
+
+            // Wheel creation
+            var wheelRadius = chromo.wheelRadii[i];
+            var wheelOffset = planck.Vec2(-0.5, 0);
+            var wheelWorldPos = axleBody.getWorldPoint(wheelOffset);
+            
+            var wheelBody = this.world.createBody({
+                type: 'dynamic',
+                position: wheelWorldPos,
+                allowSleep: false
+            });
+            wheelBody.createFixture(
+                new planck.CircleShape(wheelRadius),
+                { density: 0.5, friction: 10, restitution: 0.1, ...carFilter }
+            );
+
+            var wheelJoint = this.world.createJoint(new planck.RevoluteJoint({
+                enableMotor: true,
+                collideConnected: false
+            }, axleBody, wheelBody, wheelWorldPos));
+            
+            wheelJoint.setMotorSpeed(-6 * Math.PI);
+            wheelJoint.setMaxMotorTorque(100); // Initial torque, will be adjusted in step if needed
+
+            this.chassis.wheels.push({ body: wheelBody, joint: wheelJoint, radius: wheelRadius });
         }
 
         // Attach rendering data to chassis body
