@@ -143,9 +143,29 @@ var World = (function () {
         // Attach rendering data to chassis body
         this.chassis.vertices = this.vertices;
         this.chassis.color = { h: chromo.hue, s: chromo.sat, l: chromo.lit };
+
+        // Game state tracking
+        this.iteration = 0;
+        this.maxPosition = 0;
+        this.TRACK_LENGTH = 1500;
+        this.MAX_ITERATION = 5 * 60 * 60; // 5 minutes at 60fps
+        var wheelCount = this.chassis.wheels.length;
+        this.torque = this.chassis.getMass() * 1.5 * 15 / Math.pow(2, Math.max(wheelCount - 1, 0));
     }
 
     World.prototype.step = function () {
+        this.iteration++;
+        var pos = this.chassis.getPosition();
+        var dist = pos.x - this.startPos.x;
+        if (dist > this.maxPosition) {
+            this.maxPosition = dist;
+        }
+
+        // Apply torque to wheel motors
+        for (var i = 0; i < this.chassis.wheels.length; i++) {
+            this.chassis.wheels[i].joint.setMaxMotorTorque(this.torque);
+        }
+
         // Update spring-damper physics for axles
         var baseSpringForce = 7.5 * this.chassis.getMass();
         for (var i = 0; i < this.chassis.springs.length; i++) {
@@ -161,6 +181,27 @@ var World = (function () {
     World.prototype.getChassisPos = function () {
         var p = this.chassis.getPosition();
         return { x: p.x, y: p.y };
+    };
+
+    World.prototype.getScore = function () {
+        return Math.min(this.maxPosition, this.TRACK_LENGTH);
+    };
+
+    World.prototype.getSpeed = function () {
+        var v = this.chassis.getLinearVelocity();
+        return Math.sqrt(v.x * v.x + v.y * v.y);
+    };
+
+    World.prototype.getTorque = function () {
+        return this.torque;
+    };
+
+    World.prototype.getTime = function () {
+        return this.iteration / 60;
+    };
+
+    World.prototype.getRemainingTime = function () {
+        return (this.MAX_ITERATION - this.iteration) / 60;
     };
 
     function resetWorld(chromo) {

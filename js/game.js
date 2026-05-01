@@ -34,6 +34,7 @@
             var pos = world.getChassisPos();
             renderer.follow(pos.x, pos.y);
             renderer.draw(world.chassis);
+            HUD.update(world);
             requestAnimationFrame(frame);
         }
 

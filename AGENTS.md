@@ -33,6 +33,19 @@
 - Chassis is rendered as 8 colored triangles (triangle fan) with HSL color from chromosome.
 - Axles are rendered as rotated rectangles matching the chassis color.
 - Wheels are rendered as dark circles with a rotation radius line.
+- Camera offset (`CAMERA_Y_OFFSET = 3` in `js/config.js`) pushes the view up on screen, leaving room for future graphs at the bottom.
+
+## Game State (js/world.js)
+- `World` constructor tracks: `iteration` (physics step count), `maxPosition` (score, distance from spawn X, starts at 0, only grows), `torque` (computed from formula: `mass * 1.5 * 15 / 2^(wheels-1)`).
+- `CONSTANTS`: `TRACK_LENGTH = 1500`, `MAX_ITERATION = 18000` (5 min at 60fps).
+- `step()`: increments iteration, updates maxPosition, applies torque to each wheel motor.
+- Getters: `getScore()` (capped at TRACK_LENGTH), `getSpeed()` (velocity magnitude), `getTorque()`, `getTime()` (elapsed seconds), `getRemainingTime()` (countdown).
+
+## HUD (js/hud.js)
+- HTML overlay (`<div>` with `pointer-events: none`), lazy-initialized on first `update()` call.
+- Score: red 24px, bottom 15% center.
+- Time/Torque/Speed: red 14px, top-right, tight spacing (2px between lines).
+- Time displays as countdown `m:ss` from 5:00.
 
 ## Track Data Format (Deviation from Original)
 - Original C++ stored track segments as `std::vector` of objects at runtime with on-demand generation.
