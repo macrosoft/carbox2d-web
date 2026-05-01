@@ -37,20 +37,17 @@ var World = (function () {
             bullet: true
         });
 
-        // Store triangles for rendering: each is [[0,0], [p1x,p1y], [p2x,p2y]]
-        this.triangles = [];
+        // Store vertices for rendering: center [0,0] and 8 outer points
+        this.vertices = [[0, 0]];
 
         for (var i = 0; i < chromo.segments; i++) {
             var p1x = chromo.mags[i] * Math.cos(chromo.angles[i]);
             var p1y = chromo.mags[i] * Math.sin(chromo.angles[i]);
+            
+            this.vertices.push([p1x, p1y]);
+
             var p2x = chromo.mags[(i + 1) % chromo.segments] * Math.cos(chromo.angles[(i + 1) % chromo.segments]);
             var p2y = chromo.mags[(i + 1) % chromo.segments] * Math.sin(chromo.angles[(i + 1) % chromo.segments]);
-
-            this.triangles.push([
-                [0, 0],
-                [p1x, p1y],
-                [p2x, p2y]
-            ]);
 
             this.chassis.createFixture(
                 new planck.PolygonShape([planck.Vec2(0, 0), planck.Vec2(p1x, p1y), planck.Vec2(p2x, p2y)]),
@@ -61,7 +58,7 @@ var World = (function () {
         this.startPos = planck.Vec2(-490, 5);
 
         // Attach rendering data to chassis body
-        this.chassis.triangles = this.triangles;
+        this.chassis.vertices = this.vertices;
         this.chassis.color = { h: chromo.hue, s: chromo.sat, l: chromo.lit };
     }
 

@@ -134,18 +134,38 @@ var Renderer = (function () {
 
         ctx.lineWidth = 1.5;
 
-        for (var i = 0; i < body.triangles.length; i++) {
-            var tri = body.triangles[i];
-            ctx.beginPath();
-            ctx.moveTo(tri[0][0] * scale, -tri[0][1] * scale);
-            ctx.lineTo(tri[1][0] * scale, -tri[1][1] * scale);
-            ctx.lineTo(tri[2][0] * scale, -tri[2][1] * scale);
-            ctx.closePath();
-            ctx.fillStyle = fill;
-            ctx.fill();
-            ctx.strokeStyle = stroke;
-            ctx.stroke();
+        var verts = body.vertices;
+
+        // Fill the whole chassis as one polygon to avoid seams
+        ctx.beginPath();
+        ctx.moveTo(verts[0][0] * scale, -verts[0][1] * scale);
+        for (var i = 1; i < verts.length; i++) {
+            ctx.lineTo(verts[i][0] * scale, -verts[i][1] * scale);
         }
+        ctx.lineTo(verts[1][0] * scale, -verts[1][1] * scale);
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+
+        // Stroke the outer boundary
+        ctx.beginPath();
+        ctx.moveTo(verts[1][0] * scale, -verts[1][1] * scale);
+        for (var j = 2; j < verts.length; j++) {
+            ctx.lineTo(verts[j][0] * scale, -verts[j][1] * scale);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = stroke;
+        ctx.stroke();
+
+        // Stroke internal spokes (Center to each vertex)
+        ctx.beginPath();
+        var centerX = verts[0][0] * scale;
+        var centerY = -verts[0][1] * scale;
+        for (var k = 1; k < verts.length; k++) {
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(verts[k][0] * scale, -verts[k][1] * scale);
+        }
+        ctx.stroke();
 
         ctx.restore();
     };
