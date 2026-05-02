@@ -128,29 +128,10 @@ var Renderer = (function () {
         var fill = 'hsla(' + body.color.h + ', ' + body.color.s + '%, ' + body.color.l + '%, 0.6)';
         var stroke = 'hsl(' + body.color.h + ', ' + body.color.s + '%, ' + body.color.l + '%)';
 
-        // Draw dynamic axles in world space first
-        if (body.axles) {
-            body.axles.forEach(function(axle) {
-                var aPos = axle.getPosition();
-                var aAngle = axle.getAngle();
-                var ax = toX(aPos.x);
-                var ay = toY(aPos.y);
-                
-                ctx.save();
-                ctx.translate(ax, ay);
-                ctx.rotate(-aAngle);
-                ctx.fillStyle = fill;
-                // Offset by -0.3 along the local axle axis to match the physics shape
-                ctx.fillRect(-0.3 * scale - 0.2 * scale, -0.05 * scale, 0.4 * scale, 0.1 * scale);
-                ctx.strokeStyle = stroke;
-                ctx.strokeRect(-0.3 * scale - 0.2 * scale, -0.05 * scale, 0.4 * scale, 0.1 * scale);
-                ctx.restore();
-            });
-        }
-
-        // Draw wheels
+       // Draw wheels first (behind axles)
         if (body.wheels) {
             body.wheels.forEach(function(wheel) {
+                if (!wheel) return;
                 var wPos = wheel.body.getPosition();
                 var wAngle = wheel.body.getAngle();
                 var wx = toX(wPos.x);
@@ -175,6 +156,43 @@ var Renderer = (function () {
                 ctx.lineTo(wr, 0);
                 ctx.strokeStyle = '#000';
                 ctx.stroke();
+
+                ctx.restore();
+            });
+        }
+
+        // Draw dynamic axles on top
+        if (body.axles) {
+            body.axles.forEach(function(axle) {
+                if (!axle) return;
+                var aPos = axle.getPosition();
+                var aAngle = axle.getAngle();
+                var ax = toX(aPos.x);
+                var ay = toY(aPos.y);
+
+                ctx.save();
+                ctx.translate(ax, ay);
+                ctx.rotate(-aAngle);
+                ctx.fillStyle = fill;
+                ctx.strokeStyle = stroke;
+                ctx.lineWidth = 1;
+
+                // Draw all BoxShape fixtures on this axle body
+                var fix = axle.getFixtureList();
+                while (fix) {
+                    var shape = fix.getShape();
+                    if (shape.m_vertices && shape.m_vertices.length === 4) {
+                        ctx.beginPath();
+                        ctx.moveTo(shape.m_vertices[0].x * scale, -shape.m_vertices[0].y * scale);
+                        for (var vv = 1; vv < 4; vv++) {
+                            ctx.lineTo(shape.m_vertices[vv].x * scale, -shape.m_vertices[vv].y * scale);
+                        }
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+                    }
+                    fix = fix.getNext();
+                }
 
                 ctx.restore();
             });

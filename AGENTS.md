@@ -28,6 +28,41 @@
   - Collision: all car parts ignore each other (via `filterCategoryBits`/`filterMaskBits`) and only collide with the track.
 - Spawn position: `(-500, 5)`.
 
+## Destruction (Destructible Springs)
+
+Springs can break from heavy impact, detaching the axle+wheel assembly from the chassis.
+
+### Contact Impulse Monitoring
+- `World` registers a `post-solve` event listener: `world.on("post-solve", ...)`.
+- `onPostSolve()`: checks both fixtures of each contact. If either has the `axleMount` or `axleBodyFixture` tag, computes `maxImpulse` from `impulse.normalImpulses`.
+- Break threshold: `BREAK_STRENGTH * fixture_mass` (BREAK_STRENGTH = 50, per-fixture mass = density × shape area, matching original C++).
+- If exceeded → sets `chassis.axleBreakFlags[wheelIndex] = true`.
+
+### Breakage Processing
+- `processBreakage()` runs after each physics step:
+  1. Destroys the `PrismaticJoint` — axle is no longer constrained to chassis.
+  2. Removes mount fixture from chassis body.
+  3. Recreates both mount box (0.2×0.1 at origin) and axle box (0.2×0.05 at -0.3) on the axle body — they now fly together.
+  4. Disables wheel motor: `setMotorSpeed(0)`, `setMaxMotorTorque(0)`.
+  5. Marks `wheelActive[i] = false`, sets `springs[i] = null`.
+  6. Recalculates torque: fewer active wheels → more torque per remaining wheel.
+
+### Chassis Body Arrays
+- `chassis.mountFixtures[]` — mount fixture refs (null for inactive slots, nulled after break).
+- `chassis.axleBreakFlags[]` — break triggers from post-solve (cleared after processing).
+- `chassis.wheelActive[]` — which wheels still have drive.
+- `chassis.axleShapeSlots[]` — stores `{fixture, body, localMount, mountPx, mountPy, mountAngle}` for recreation.
+
+### Fixture Tagging (in createCar)
+- Mount fixtures: `axleMount = true`, `wheelIndex = i`.
+- Axle body fixtures: `axleBodyFixture = true`, `wheelIndex = i`.
+- Inactive wheel slots (-1) push `null` to all arrays to maintain index alignment.
+
+### Rendering (renderer.js)
+- Wheels are drawn first (behind axles) for correct z-ordering.
+- Axles draw all `BoxShape` fixtures from `axle.getFixtureList()` — handles both normal state (1 box) and broken state (2 boxes: mount + axle).
+- Null-safe: all forEach loops skip `null` entries.
+
 ## Rendering
 - Use standard HTML5 Canvas API (or WebGL if chosen) instead of OpenGL.
 - Chassis is rendered as 8 colored triangles (triangle fan) with HSL color from chromosome.

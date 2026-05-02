@@ -52,10 +52,23 @@ var World = (function () {
         chassis.axles = [];
         chassis.springs = [];
         chassis.wheels = [];
+        chassis.mountFixtures = [];
+        chassis.axleBreakFlags = [];
+        chassis.wheelActive = [];
+        chassis.axleShapeSlots = [];
 
         for (var i = 0; i < chromo.wheelOn.length; i++) {
             var segIdx = chromo.wheelOn[i];
-            if (segIdx === -1) continue;
+            if (segIdx === -1) {
+                chassis.mountFixtures.push(null);
+                chassis.axleBreakFlags.push(false);
+                chassis.wheelActive.push(false);
+                chassis.axles.push(null);
+                chassis.springs.push(null);
+                chassis.wheels.push(null);
+                chassis.axleShapeSlots.push(null);
+                continue;
+            }
 
             var angle = chromo.angles[segIdx];
             var mag = chromo.mags[segIdx];
@@ -63,10 +76,16 @@ var World = (function () {
             var py = mag * Math.sin(angle);
             var axleAngle = chromo.axleAngles[i];
 
-            chassis.createFixture(
+            var mountFixture = chassis.createFixture(
                 new planck.BoxShape(0.2, 0.1, planck.Vec2(px, py), axleAngle),
                 { density: 2, friction: 10, restitution: 0.05, ...carFilter }
             );
+      mountFixture.axleMount = true;
+            mountFixture.wheelIndex = i;
+            mountFixture._breakMass = 2 * 0.04; // density=2, area=0.04
+            chassis.mountFixtures.push(mountFixture);
+            chassis.axleBreakFlags.push(false);
+            chassis.wheelActive.push(true);
 
             var worldAnchor = chassis.getWorldPoint(planck.Vec2(px, py));
             var axleBody = worldInstance.createBody({
@@ -75,10 +94,20 @@ var World = (function () {
                 angle: axleAngle
             });
 
-            axleBody.createFixture(
+            var axleFixture = axleBody.createFixture(
                 new planck.BoxShape(0.2, 0.05, planck.Vec2(-0.3, 0), 0),
                 { density: 20, friction: 10, restitution: 0.05, ...carFilter }
             );
+            axleFixture.axleBodyFixture = true;
+            axleFixture.wheelIndex = i;
+            chassis.axleShapeSlots.push({
+                fixture: axleFixture,
+                body: axleBody,
+                localMount: planck.Vec2(px, py),
+                mountPx: px,
+                mountPy: py,
+                mountAngle: axleAngle
+            });
 
             var joint = worldInstance.createJoint(new planck.PrismaticJoint({
                 lowerTranslation: -0.1,
@@ -143,8 +172,13 @@ var World = (function () {
         this.prevDist = 0;
         this.stopped = false;
 
-        var wheelCount = this.chassis.wheels.length;
+        var wheelCount = this.chassis.wheels.filter(function(w) { return w !== null; }).length;
         this.torque = this.chassis.getMass() * MASS_MULT / Math.pow(2, Math.max(wheelCount - 1, 0));
+
+        var self = this;
+        this.world.on("post-solve", function(contact, impulse) {
+            self.onPostSolve(contact, impulse);
+        });
     };
 
     World.prototype.reset = function (newChromo) {
@@ -164,24 +198,137 @@ var World = (function () {
         this.prevDist = 0;
         this.stopped = false;
 
-        var wheelCount = this.chassis.wheels.length;
-        this.torque = this.chassis.getMass() * MASS_MULT / Math.pow(2, Math.max(wheelCount - 1, 0));
+        var wheelCount2 = this.chassis.wheels.filter(function(w) { return w !== null; }).length;
+        this.torque = this.chassis.getMass() * MASS_MULT / Math.pow(2, Math.max(wheelCount2 - 1, 0));
+
+        var self = this;
+        this.world.on("post-solve", function(contact, impulse) {
+            self.onPostSolve(contact, impulse);
+        });
+    };
+
+ World.prototype.onPostSolve = function(contact, impulse) {
+        for (var fb = 0; fb < 2; fb++) {
+            var fixture = (fb === 0) ? contact.getFixtureA() : contact.getFixtureB();
+            var wheelIdx = -1;
+            if (fixture.axleMount) {
+                wheelIdx = fixture.wheelIndex;
+            } else if (fixture.axleBodyFixture) {
+                wheelIdx = fixture.wheelIndex;
+            }
+            if (wheelIdx === -1) continue;
+
+            var impulses = impulse.normalImpulses;
+            var maxImpulse = 0;
+            for (var ii = 0; ii < impulses.length; ii++) {
+                if (impulses[ii] > maxImpulse) maxImpulse = impulses[ii];
+            }
+
+            // Per-fixture mass: density * area (as in original C++)
+            var density = fixture.m_density;
+            var area;
+            var shape = fixture.m_shape;
+            if (shape.m_radius) {
+                area = Math.PI * shape.m_radius * shape.m_radius;
+            } else if (shape.m_vertices) {
+                var verts = shape.m_vertices;
+                area = 0;
+                for (var j = 0; j < verts.length; j++) {
+                    var j2 = (j + 1) % verts.length;
+                    area += verts[j].x * verts[j2].y - verts[j2].x * verts[j].y;
+                }
+                area = Math.abs(area) / 2;
+            } else {
+                area = 1;
+            }
+            var mass = density * area;
+            var strength = BREAK_STRENGTH * mass;
+            if (strength < maxImpulse) {
+                this.chassis.axleBreakFlags[wheelIdx] = true;
+                return;
+            }
+        }
+    };
+
+    World.prototype.processBreakage = function () {
+        var chassis = this.chassis;
+        for (var i = 0; i < chassis.axleBreakFlags.length; i++) {
+            if (!chassis.axleBreakFlags[i]) continue;
+            chassis.axleBreakFlags[i] = false;
+
+            if (!chassis.wheelActive[i]) continue;
+
+            // Destroy the prismatic joint (spring)
+            var spring = chassis.springs[i];
+            if (spring) {
+                this.world.destroyJoint(spring);
+                chassis.springs[i] = null;
+            }
+
+            // Remove mount fixture from chassis
+            var mountFixture = chassis.mountFixtures[i];
+            if (mountFixture) {
+                chassis.destroyFixture(mountFixture);
+                chassis.mountFixtures[i] = null;
+            }
+
+            // Recreate fixtures on axle body (mount + axle, now free-flying)
+            var slot = chassis.axleShapeSlots[i];
+            if (slot) {
+                // Remove old tagged axle fixture
+                slot.body.destroyFixture(slot.fixture);
+
+                // Recreate axle box (density=20, offset -0.3)
+                slot.body.createFixture(
+                    new planck.BoxShape(0.2, 0.05, planck.Vec2(-0.3, 0), 0),
+                    { density: 20, friction: 10, restitution: 0.05,
+                      filterCategoryBits: 0x0001, filterMaskBits: 0x0002, filterGroupIndex: -1 }
+                );
+
+               // Recreate mount box on axle body (was on chassis, now flies with axle)
+                // Axle body was created with angle=mountAngle, so fixture angle 0 = same world orientation
+                slot.body.createFixture(
+                    new planck.BoxShape(0.2, 0.1, planck.Vec2(0, 0), 0),
+                    { density: 2, friction: 10, restitution: 0.05,
+                      filterCategoryBits: 0x0001, filterMaskBits: 0x0002, filterGroupIndex: -1 }
+                );
+            }
+
+            // Disable wheel motor
+            var wheel = chassis.wheels[i];
+            if (wheel) {
+                wheel.joint.setMotorSpeed(0);
+                wheel.joint.setMaxMotorTorque(0);
+            }
+
+            chassis.wheelActive[i] = false;
+
+            // Recalculate torque
+            var activeCount = chassis.wheelActive.filter(function(a) { return a; }).length;
+            this.torque = chassis.getMass() * MASS_MULT / Math.pow(2, Math.max(activeCount - 1, 0));
+        }
     };
 
     World.prototype.step = function () {
         for (var i = 0; i < this.chassis.wheels.length; i++) {
-            this.chassis.wheels[i].joint.setMaxMotorTorque(this.torque);
+            var wheel = this.chassis.wheels[i];
+            if (wheel && this.chassis.wheelActive[i]) {
+                wheel.joint.setMaxMotorTorque(this.torque);
+            }
         }
 
         var baseSpringForce = 7.5 * this.chassis.getMass();
         for (var i = 0; i < this.chassis.springs.length; i++) {
             var joint = this.chassis.springs[i];
+            if (!joint) continue;
             var translation = joint.getJointTranslation();
             joint.setMaxMotorForce(baseSpringForce + 40 * baseSpringForce * translation * translation);
             joint.setMotorSpeed(-20 * translation);
         }
 
         this.world.step(TIME_STEP, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
+
+        this.processBreakage();
 
         this.iteration++;
         var pos = this.chassis.getPosition();

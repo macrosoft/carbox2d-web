@@ -11,6 +11,7 @@ An evolution simulator for cars, inspired by [boxcar2d.com](http://boxcar2d.com)
 - Pre-computed binary track data (Float32LE, 6000 bytes) for fast loading
 - Random chassis generation: 8 triangular segments with random angles and magnitudes
 - Procedural suspension: dynamic axles with spring-damper physics and motorized wheels
+- Destructible springs: heavy impacts break suspension joints, detaching axle+wheel from chassis (matching original C++ behavior)
 - HSL-colored chassis body, unique on every restart
 - Smooth camera tracking with fixed-timestep physics
 - HUD overlay: score (bottom-center), time/torque/speed (top-right) in red
