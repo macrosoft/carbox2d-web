@@ -6,6 +6,7 @@ var HUD = (function () {
     var _speedEl = null;
     var _tableBody = null;
     var _genEl = null;
+    var _pauseEl = null;
     var _runs = [];
     var _maxRuns = 32;
 
@@ -17,7 +18,8 @@ var HUD = (function () {
             'pointer-events:none;font-family:monospace;user-select:none;';
 
         _container.innerHTML =
-            // Table panel (left side)
+            '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:32px;color:blue;text-shadow:1px 1px 2px rgba(0,0,0,0.5);display:none;" id="hudPause">[PAUSE]</div>' +
+
             '<div style="position:absolute;top:18px;left:5px;background:rgba(255,255,200,0.75);padding:4px 8px;">' +
             '<div style="font-size:12px;color:black;margin-bottom:2px;">' +
             '<span style="display:inline-block;width:20px;text-align:left;">#</span>' +
@@ -25,11 +27,9 @@ var HUD = (function () {
             '<span style="display:inline-block;width:50px;text-align:right;">Time</span></div>' +
             '<div id="hudTableBody"></div></div>' +
 
-            // Score (bottom center)
             '<div style="position:absolute;bottom:15%;left:50%;transform:translateX(-50%);font-size:24px;color:red;text-shadow:1px 1px 2px rgba(0,0,0,0.3);">' +
             '<span id="hudScore">Score: 0.0</span></div>' +
 
-            // Stats + Generation (top right + center)
             '<div style="position:absolute;top:12px;right:12px;font-size:14px;color:red;text-align:right;text-shadow:1px 1px 2px rgba(0,0,0,0.3);">' +
             '<div><span id="hudTime">Time: 5:00</span></div>' +
             '<div style="margin-top:2px;"><span id="hudTorque">Torque: 0.0</span></div>' +
@@ -40,6 +40,7 @@ var HUD = (function () {
 
         document.body.appendChild(_container);
 
+        _pauseEl = document.getElementById('hudPause');
         _scoreEl = document.getElementById('hudScore');
         _timeEl = document.getElementById('hudTime');
         _torqueEl = document.getElementById('hudTorque');
@@ -94,5 +95,9 @@ var HUD = (function () {
         if (_tableBody) _tableBody.innerHTML = '';
     }
 
-    return { init: init, update: update, saveRun: saveRun, resetRuns: resetRuns, updateGeneration: updateGeneration };
+    function setPause(paused) {
+        if (_pauseEl) _pauseEl.style.display = paused ? 'block' : 'none';
+    }
+
+    return { init: init, update: update, saveRun: saveRun, resetRuns: resetRuns, updateGeneration: updateGeneration, setPause: setPause };
 })();
