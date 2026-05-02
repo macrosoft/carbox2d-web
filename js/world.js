@@ -144,8 +144,8 @@ var World = (function () {
         this.stopped = false;
 
         var wheelCount = this.chassis.wheels.length;
-        this.torque = this.chassis.getMass() * 1.5 * 15 / Math.pow(2, Math.max(wheelCount - 1, 0));
-    }
+this.torque = this.chassis.getMass() * MASS_MULT / Math.pow(2, Math.max(wheelCount - 1, 0));
+    };
 
     World.prototype.reset = function (newChromo) {
         if (newChromo) this.chromo = newChromo;
@@ -165,7 +165,7 @@ var World = (function () {
         this.stopped = false;
 
         var wheelCount = this.chassis.wheels.length;
-        this.torque = this.chassis.getMass() * 1.5 * 15 / Math.pow(2, Math.max(wheelCount - 1, 0));
+        this.torque = this.chassis.getMass() * MASS_MULT / Math.pow(2, Math.max(wheelCount - 1, 0));
     };
 
     World.prototype.step = function () {
