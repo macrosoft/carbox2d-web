@@ -33,7 +33,8 @@
 - Chassis is rendered as 8 colored triangles (triangle fan) with HSL color from chromosome.
 - Axles are rendered as rotated rectangles matching the chassis color.
 - Wheels are rendered as dark circles with a rotation radius line.
-- Camera offset (`CAMERA_Y_OFFSET = 3` in `js/config.js`) pushes the view up on screen, leaving room for future graphs at the bottom.
+- Camera offset (`CAMERA_Y_OFFSET = 2` in `js/config.js`) pushes the view up on screen, leaving room for future graphs at the bottom.
+- Camera X follows instantly (no smoothing); Y uses smooth lerp.
 
 ## Game State (js/world.js)
 - `World` constructor tracks: `iteration` (physics step count), `maxPosition` (score, distance from spawn X, starts at 0, only grows), `torque` (computed from formula: `mass * 1.5 * 15 / 2^(wheels-1)`), `slow` (stall counter), `prevDist` (for stuck detection), `stopped` (flag).
@@ -41,14 +42,20 @@
 - Helper functions: `buildTrack`, `createCar` (used by both constructor and `reset`).
 - `CONSTANTS`: `TRACK_LENGTH = 1500`, `MAX_ITERATION = 18000` (5 min at 60fps).
 - `step()`: performs physics step, then checks stop conditions via stuck detection: if distance didn't advance by 1m, stall counter increments (cap: 180 ticks if score < 10, 300 ticks if >= 10). Also stops at track end, time expiry, or backward roll (>10m). Resets automatically via `world.reset()` in game loop.
-- `reset()`: creates a new `planck.World` + track + identical car (same chromo), resets all counters.
+- `reset(newChromo)`: creates a new `planck.World` + track + car. If `newChromo` provided, uses it instead of current chromo. Resets all counters.
 - Getters: `getScore()` (capped at TRACK_LENGTH), `getSpeed()` (velocity magnitude), `getTorque()`, `getTime()` (elapsed seconds), `getRemainingTime()` (countdown), `isStopped()`.
+
+## Population (js/game.js)
+- `POPULATION_SIZE = 32` — 32 random chromosomes per generation.
+- `game.js` orchestrates: generates population, runs cars sequentially. When one stops → `HUD.saveRun()` increments index. When all 32 stop → new generation (32 new random chromosomes), table resets.
 
 ## HUD (js/hud.js)
 - HTML overlay (`<div>` with `pointer-events: none`), lazy-initialized on first `update()` call.
 - Score: red 24px, bottom 15% center.
 - Time/Torque/Speed: red 14px, top-right, tight spacing (2px between lines).
 - Time displays as countdown `m:ss` from 5:00.
+- Run table: left panel, semi-transparent yellow background, columns `#`, `Score` (1 decimal), `Time` (m:ss). Max 32 rows, one per car in population. Filled on each car stop. Resets at generation boundary.
+- Generation number + current car index: top-center, black 14px.
 
 ## Track Data Format (Deviation from Original)
 - Original C++ stored track segments as `std::vector` of objects at runtime with on-demand generation.

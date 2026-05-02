@@ -7,12 +7,25 @@
         renderer.resize();
     });
 
+    var POPULATION_SIZE = 32;
+    var _population = [];
+    var _carIndex = 0;
+    var _generation = 0;
+
+    function startGeneration() {
+        _population = [];
+        for (var i = 0; i < POPULATION_SIZE; i++) {
+            _population.push(Chromosome.generate());
+        }
+        _carIndex = 0;
+    }
+
     TrackLoader.load().then(function (track) {
         World.load(track);
         Renderer.setTrackData(track);
 
-        var chromo = Chromosome.generate();
-        var world = new World.World(chromo);
+        startGeneration();
+        var world = new World.World(_population[0]);
         renderer.setCamera(world.getChassisPos().x, world.getChassisPos().y + CAMERA_Y_OFFSET);
 
         var lastTick = null;
@@ -31,7 +44,18 @@
                 accumulator -= TIME_STEP;
 
                 if (world.isStopped()) {
-                    world.reset();
+                    if (_generation > 0 && _carIndex === 0) {
+                        HUD.resetRuns();
+                    }
+                    HUD.saveRun(_carIndex, world.getScore(), world.getTime());
+                    _carIndex++;
+
+                    if (_carIndex >= POPULATION_SIZE) {
+                        _generation++;
+                        startGeneration();
+                    }
+
+                    world.reset(_population[_carIndex]);
                     renderer.setCamera(world.getChassisPos().x, world.getChassisPos().y + CAMERA_Y_OFFSET);
                     accumulator = 0;
                     break;
@@ -42,6 +66,7 @@
             renderer.follow(pos.x, pos.y);
             renderer.draw(world.chassis);
             HUD.update(world);
+            HUD.updateGeneration(_generation, _carIndex);
             requestAnimationFrame(frame);
         }
 

@@ -147,7 +147,9 @@ var World = (function () {
         this.torque = this.chassis.getMass() * 1.5 * 15 / Math.pow(2, Math.max(wheelCount - 1, 0));
     }
 
-    World.prototype.reset = function () {
+    World.prototype.reset = function (newChromo) {
+        if (newChromo) this.chromo = newChromo;
+
         this.world = new planck.World({
             gravity: planck.Vec2(0, -15),
             continuousPhysics: true,
