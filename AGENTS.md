@@ -3,106 +3,99 @@
 ## Physics (Planck.js)
 - We use `planck.js`, not the original `Box2D`.
 - Documentation: `@docs/planck.d.ts`
-- Planck.js dropped the `b2` prefix. Use `planck.World`, `planck.Body`, `planck.Vec2` instead of `b2World`, `b2Body`, `b2Vec2`.
-- Methods use `lowerCamelCase` (e.g., `world.createBody()`, not `CreateBody()`).
-- Definition objects (BodyDef, FixtureDef) in Planck.js are replaced with plain JS objects.
+- Planck.js dropped the `b2` prefix. Use `planck.World`, `planck.Body`, `planck.Vec2`.
+- Methods use `lowerCamelCase` (e.g., `world.createBody()`).
+- Definition objects are replaced with plain JS objects.
   *CORRECT:* `world.createBody({ type: 'dynamic', position: planck.Vec2(0, 0) })`
   *INCORRECT:* `let def = new planck.BodyDef();`
 - Shapes are immutable.
 
-## Chassis (Random)
-- Chassis body is composed of 8 triangular segments forming a fan shape.
-- Each segment has random angle (min 0.08 rad, sum = 2π) and magnitude (0.3-3.0m).
-- Each restart generates a new random chassis.
+## Chromosome (DNA)
+
+Each car is defined by a chromosome: `{ genes: Float32Array(40), colors: Uint8Array(48) }`.
+
+**`genes[40]`** — all values in [0, 1], decoded by `decodeChromosome()` in `world.js`:
+
+| Indices | Field | Decode |
+|---------|-------|--------|
+| `j*2` (j=0..7) | raw angle segment j | `v * 0.92 + 0.08`, normalized so sum = 2π, cumulative |
+| `j*2+1` (j=0..7) | magnitude segment j | `v * 2.9 + 0.1` → [0.1, 3.0] |
+| `16+i*3` (i=0..7) | wheel-on slot i | `<= 0.5` → active on segment i, `> 0.5` → no wheel |
+| `16+i*3+1` (i=0..7) | axle angle slot i | `v * 2π` |
+| `16+i*3+2` (i=0..7) | wheel radius slot i | `v * 1.4 + 0.1` → [0.1, 1.5] |
+
+**`colors[48]`** — 16 RGB triples, values 0-255:
+
+| Indices | Field |
+|---------|-------|
+| `i*3 .. i*3+2` (i=0..7) | chassis segment i — RGB |
+| `24+i*3 .. 24+i*3+2` (i=0..7) | axle slot i — RGB |
+
+At init, all 16 color slots get the same random RGB (like original C++).
+
+**`js/chromosome.js`** — `Chromosome.generate()` creates a new random chromosome.
+
+## Chassis
+
+- 8 triangular segments forming a fan shape.
+- Wheel slot `i` maps 1-to-1 to segment `i` (50% chance active).
 - Physics: density=2, friction=10, restitution=0.05.
-- `js/chromosome.js` — gene generation (angles, mags, hue/sat/lit).
-- Suspension:
-  - 50% probability for each wheel slot to be active.
-  - Each chassis segment can host at most one suspension mount.
-  - Mount consists of a static `BoxShape` on chassis and a dynamic `axle` body.
-  - Connection: `PrismaticJoint` with limits (-0.1, 0.25) and a custom spring-damper motor logic in `World.step`.
-  - Axle visual/physical offset: -0.3 units along axle axis.
-- Wheels:
-  - Connected to axle via `RevoluteJoint` with motor.
-  - Radius: random (0.1-1.5m).
-  - Collision: all car parts ignore each other (via `filterCategoryBits`/`filterMaskBits`) and only collide with the track.
-- Spawn position: `(-500, 5)`.
+- Suspension: `PrismaticJoint` with limits (-0.1, 0.25), custom spring-damper motor in `World.step`.
+- Axle offset: -0.3 units along axle axis.
+- Wheels: `RevoluteJoint` with motor, radius random 0.1-1.5m.
+- Collision: car parts ignore each other (`filterCategoryBits`/`filterMaskBits`), only collide with track.
+- Spawn: `(-500, 5)`.
 
 ## Destruction (Destructible Springs)
 
-Springs can break from heavy impact, detaching the axle+wheel assembly from the chassis.
-
-### Contact Impulse Monitoring
-- `World` registers a `post-solve` event listener: `world.on("post-solve", ...)`.
-- `onPostSolve()`: checks both fixtures of each contact. If either has the `axleMount` or `axleBodyFixture` tag, computes `maxImpulse` from `impulse.normalImpulses`.
-- Break threshold: `BREAK_STRENGTH * fixture_mass` (BREAK_STRENGTH = 50, per-fixture mass = density × shape area, matching original C++).
-- If exceeded → sets `chassis.axleBreakFlags[wheelIndex] = true`.
-
-### Breakage Processing
-- `processBreakage()` runs after each physics step:
-  1. Destroys the `PrismaticJoint` — axle is no longer constrained to chassis.
-  2. Removes mount fixture from chassis body.
-  3. Recreates both mount box (0.2×0.1 at origin) and axle box (0.2×0.05 at -0.3) on the axle body — they now fly together.
-  4. Disables wheel motor: `setMotorSpeed(0)`, `setMaxMotorTorque(0)`.
-  5. Marks `wheelActive[i] = false`, sets `springs[i] = null`.
-  6. Recalculates torque: fewer active wheels → more torque per remaining wheel.
-
-### Chassis Body Arrays
-- `chassis.mountFixtures[]` — mount fixture refs (null for inactive slots, nulled after break).
-- `chassis.axleBreakFlags[]` — break triggers from post-solve (cleared after processing).
-- `chassis.wheelActive[]` — which wheels still have drive.
-- `chassis.axleShapeSlots[]` — stores `{fixture, body, localMount, mountPx, mountPy, mountAngle}` for recreation.
-
-### Fixture Tagging (in createCar)
-- Mount fixtures: `axleMount = true`, `wheelIndex = i`.
-- Axle body fixtures: `axleBodyFixture = true`, `wheelIndex = i`.
-- Inactive wheel slots (-1) push `null` to all arrays to maintain index alignment.
-
-### Rendering (renderer.js)
-- Wheels are drawn first (behind axles) for correct z-ordering.
-- Axles draw all `BoxShape` fixtures from `axle.getFixtureList()` — handles both normal state (1 box) and broken state (2 boxes: mount + axle).
-- Null-safe: all forEach loops skip `null` entries.
+- `post-solve` listener checks impulse on `axleMount` / `axleBodyFixture` fixtures.
+- Break threshold: `BREAK_STRENGTH * fixture_mass` (BREAK_STRENGTH = 50).
+- On break: destroy prismatic joint, remove mount fixture, recreate boxes on axle body, disable wheel motor, recalculate torque.
+- Arrays on chassis: `mountFixtures[]`, `axleBreakFlags[]`, `wheelActive[]`, `axleShapeSlots[]` (stores `{fixture, body, localMount, mountPx, mountPy, mountAngle, colorIndex}`).
 
 ## Rendering
-- Use standard HTML5 Canvas API (or WebGL if chosen) instead of OpenGL.
-- Chassis is rendered as 8 colored triangles (triangle fan) with HSL color from chromosome.
-- Axles are rendered as rotated rectangles matching the chassis color.
-- Wheels are rendered as dark circles with a rotation radius line.
-- Camera offset (`CAMERA_Y_OFFSET = 2` in `js/config.js`) pushes the view up on screen, leaving room for future graphs at the bottom.
-- Camera X follows instantly (no smoothing); Y uses smooth lerp.
+
+- HTML5 Canvas API.
+- Chassis: 8 individual triangle segments, each drawn with its own color from `body.colors[]`.
+- Internal spokes drawn with the color of the segment they lead to.
+- Axles: per-slot color from `body.axleColors[]`.
+- Mounts: color of the segment they're attached to.
+- Wheels: dark circles with rotation radius line.
+- Camera: `CAMERA_Y_OFFSET = 2` (js/config.js), X instant, Y smooth lerp.
 
 ## Game State (js/world.js)
-- `World` constructor tracks: `iteration` (physics step count), `maxPosition` (score, distance from spawn X, starts at 0, only grows), `torque` (computed from formula: `mass * 1.5 * 15 / 2^(wheels-1)`), `slow` (stall counter), `prevDist` (for stuck detection), `stopped` (flag).
+
+- `World` constructor: `iteration`, `maxPosition` (score, only grows), `torque` (`mass * 1.5 * 15 / 2^(wheels-1)`), `slow`, `prevDist`, `stopped`.
 - Chromosome saved as `this.chromo` for deterministic restart.
-- Helper functions: `buildTrack`, `createCar` (used by both constructor and `reset`).
-- `CONSTANTS`: `TRACK_LENGTH = 1500`, `MAX_ITERATION = 18000` (5 min at 60fps).
-- `step()`: performs physics step, then checks stop conditions via stuck detection: if distance didn't advance by 1m, stall counter increments (cap: 180 ticks if score < 10, 300 ticks if >= 10). Also stops at track end, time expiry, or backward roll (>10m). Resets automatically via `world.reset()` in game loop.
-- `reset(newChromo)`: creates a new `planck.World` + track + car. If `newChromo` provided, uses it instead of current chromo. Resets all counters.
-- Getters: `getScore()` (capped at TRACK_LENGTH), `getSpeed()` (velocity magnitude), `getTorque()`, `getTime()` (elapsed seconds), `getRemainingTime()` (countdown), `isStopped()`.
+- `TRACK_LENGTH = 1500`, `MAX_ITERATION = 18000` (5 min at 60fps).
+- `step()`: physics step, breakage processing, stop conditions (stall detection, track end, time, backward roll).
+- `reset(newChromo)`: new world + track + car, resets counters.
+- Getters: `getScore()`, `getSpeed()`, `getTorque()`, `getTime()`, `getRemainingTime()`, `isStopped()`.
 
 ## Population (js/game.js)
+
 - `POPULATION_SIZE = 32` — 32 random chromosomes per generation.
-- `game.js` orchestrates: generates population, runs cars sequentially. When one stops → `HUD.saveRun()` increments index. When all 32 stop → new generation (32 new random chromosomes), table resets.
+- Cars run sequentially. When one stops → `HUD.saveRun()`, next car. When all 32 stop → new generation.
 
 ## HUD (js/hud.js)
-- HTML overlay (`<div>` with `pointer-events: none`), lazy-initialized on first `update()` call.
-- Score: red 24px, bottom 15% center.
-- Time/Torque/Speed: red 14px, top-right, tight spacing (2px between lines).
-- Time displays as countdown `m:ss` from 5:00.
-- Run table: left panel, semi-transparent yellow background, columns `#`, `Score` (1 decimal), `Time` (m:ss). Max 32 rows, one per car in population. Filled on each car stop. Resets at generation boundary.
-- Generation number + current car index: top-center, black 14px.
 
-## Track Data Format (Deviation from Original)
-- Original C++ stored track segments as `std::vector` of objects at runtime with on-demand generation.
-- Web version uses pre-computed binary track data in `js/track_data.bin` (6000 bytes, Float32LE: `x, y, angle` per segment × 500 segments).
-- Loading is async via `TrackLoader.load()` → returns `{count, data: Float32Array}`.
-- Original `config.js` contained `TRACK_SEGMENTS` array (37KB JSON). It was replaced with binary format to reduce parsing overhead and payload size.
-- Track data is in `js/track_data.bin`. To regenerate, a Node.js script writes Float32LE.
-- Modules consume binary data via `TrackLoader.load()` promise. The game loop starts after track loading completes.
+- HTML overlay (`pointer-events: none`), lazy-init on first `update()`.
+- Score: red 24px, bottom 15% center.
+- Time/Torque/Speed: red 14px, top-right.
+- Time: countdown `m:ss` from 5:00.
+- Run table: left panel, yellow bg, columns `#`, `Score`, `Time`. Max 32 rows, resets at generation boundary.
+- Generation + car index: top-center, black 14px.
+
+## Track Data Format
+
+- Binary: `js/track_data.bin` (6000 bytes, Float32LE: `x, y, angle` × 500 segments).
+- Async load: `TrackLoader.load()` → `{count, data: Float32Array}`.
+- Game loop starts after track loads.
 
 ## Legacy Project
-- Original C++ source code is located in the `legacy_cpp` folder.
+
+- Original C++ source: `legacy_cpp` folder.
 
 ## Git
+
 - **NEVER** commit or push without explicit user permission.
-- The user decides when to commit. Only edit code.

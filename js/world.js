@@ -20,7 +20,72 @@ var World = (function () {
         return trackBody;
     }
 
+    function decodeChromosome(genes) {
+        var angles = [];
+        var mags = [];
+        var NUM = 8;
+        var MIN_ANGLE = 0.08;
+        var MIN_MAG = 0.1;
+        var MAX_MAG = 3.0;
+
+        var rawAngles = [];
+        var sum = 0;
+        for (var i = 0; i < NUM; i++) {
+            var rawAngle = genes[i * 2] * (1 - MIN_ANGLE) + MIN_ANGLE;
+            rawAngles.push(rawAngle);
+            sum += rawAngle;
+            mags.push(genes[i * 2 + 1] * (MAX_MAG - MIN_MAG) + MIN_MAG);
+        }
+
+        var cumulative = 0;
+        for (var i = 0; i < NUM; i++) {
+            angles.push(cumulative);
+            cumulative += (rawAngles[i] / sum) * 2 * Math.PI;
+        }
+
+        var wheelOn = [];
+        var axleAngles = [];
+        var wheelRadii = [];
+        var WHEEL_PROB0 = 0.5;
+        var MIN_WHEEL = 0.1;
+        var MAX_WHEEL = 1.5;
+
+        for (var i = 0; i < NUM; i++) {
+            var woGene = genes[16 + i * 3];
+            if (woGene > WHEEL_PROB0) {
+                wheelOn.push(-1);
+            } else {
+                wheelOn.push(i);
+            }
+            axleAngles.push(genes[16 + i * 3 + 1] * 2 * Math.PI);
+            wheelRadii.push(genes[16 + i * 3 + 2] * (MAX_WHEEL - MIN_WHEEL) + MIN_WHEEL);
+        }
+
+        return {
+            angles: angles,
+            mags: mags,
+            wheelOn: wheelOn,
+            axleAngles: axleAngles,
+            wheelRadii: wheelRadii
+        };
+    }
+
     function createCar(worldInstance, chromo) {
+        var decoded = decodeChromosome(chromo.genes);
+        var NUM = 8;
+
+        var segColors = [];
+        var col = chromo.colors;
+        for (var i = 0; i < NUM; i++) {
+            segColors.push('rgb(' + col[i * 3] + ',' + col[i * 3 + 1] + ',' + col[i * 3 + 2] + ')');
+        }
+
+        var axleColors = [];
+        for (var i = 0; i < NUM; i++) {
+            var idx = 24 + i * 3;
+            axleColors.push('rgb(' + col[idx] + ',' + col[idx + 1] + ',' + col[idx + 2] + ')');
+        }
+
         var chassis = worldInstance.createBody({
             type: 'dynamic',
             position: planck.Vec2(-500, 5),
@@ -35,13 +100,14 @@ var World = (function () {
             filterGroupIndex: -1
         };
 
-        for (var i = 0; i < chromo.segments; i++) {
-            var p1x = chromo.mags[i] * Math.cos(chromo.angles[i]);
-            var p1y = chromo.mags[i] * Math.sin(chromo.angles[i]);
+        for (var i = 0; i < NUM; i++) {
+            var p1x = decoded.mags[i] * Math.cos(decoded.angles[i]);
+            var p1y = decoded.mags[i] * Math.sin(decoded.angles[i]);
             vertices.push([p1x, p1y]);
 
-            var p2x = chromo.mags[(i + 1) % chromo.segments] * Math.cos(chromo.angles[(i + 1) % chromo.segments]);
-            var p2y = chromo.mags[(i + 1) % chromo.segments] * Math.sin(chromo.angles[(i + 1) % chromo.segments]);
+            var ni = (i + 1) % NUM;
+            var p2x = decoded.mags[ni] * Math.cos(decoded.angles[ni]);
+            var p2y = decoded.mags[ni] * Math.sin(decoded.angles[ni]);
 
             chassis.createFixture(
                 new planck.PolygonShape([planck.Vec2(0, 0), planck.Vec2(p1x, p1y), planck.Vec2(p2x, p2y)]),
@@ -56,9 +122,11 @@ var World = (function () {
         chassis.axleBreakFlags = [];
         chassis.wheelActive = [];
         chassis.axleShapeSlots = [];
+        chassis.colors = segColors;
+        chassis.axleColors = axleColors;
 
-        for (var i = 0; i < chromo.wheelOn.length; i++) {
-            var segIdx = chromo.wheelOn[i];
+        for (var i = 0; i < decoded.wheelOn.length; i++) {
+            var segIdx = decoded.wheelOn[i];
             if (segIdx === -1) {
                 chassis.mountFixtures.push(null);
                 chassis.axleBreakFlags.push(false);
@@ -70,19 +138,19 @@ var World = (function () {
                 continue;
             }
 
-            var angle = chromo.angles[segIdx];
-            var mag = chromo.mags[segIdx];
+            var angle = decoded.angles[segIdx];
+            var mag = decoded.mags[segIdx];
             var px = mag * Math.cos(angle);
             var py = mag * Math.sin(angle);
-            var axleAngle = chromo.axleAngles[i];
+            var axleAngle = decoded.axleAngles[i];
 
             var mountFixture = chassis.createFixture(
                 new planck.BoxShape(0.2, 0.1, planck.Vec2(px, py), axleAngle),
                 { density: 2, friction: 10, restitution: 0.05, ...carFilter }
             );
-      mountFixture.axleMount = true;
+            mountFixture.axleMount = true;
             mountFixture.wheelIndex = i;
-            mountFixture._breakMass = 2 * 0.04; // density=2, area=0.04
+            mountFixture._breakMass = 2 * 0.04;
             chassis.mountFixtures.push(mountFixture);
             chassis.axleBreakFlags.push(false);
             chassis.wheelActive.push(true);
@@ -106,7 +174,8 @@ var World = (function () {
                 localMount: planck.Vec2(px, py),
                 mountPx: px,
                 mountPy: py,
-                mountAngle: axleAngle
+                mountAngle: axleAngle,
+                colorIndex: segIdx
             });
 
             var joint = worldInstance.createJoint(new planck.PrismaticJoint({
@@ -120,7 +189,7 @@ var World = (function () {
             chassis.axles.push(axleBody);
             chassis.springs.push(joint);
 
-            var wheelRadius = chromo.wheelRadii[i];
+            var wheelRadius = decoded.wheelRadii[i];
             var wheelOffset = planck.Vec2(-0.5, 0);
             var wheelWorldPos = axleBody.getWorldPoint(wheelOffset);
 
@@ -146,7 +215,6 @@ var World = (function () {
         }
 
         chassis.vertices = vertices;
-        chassis.color = { h: chromo.hue, s: chromo.sat, l: chromo.lit };
 
         return chassis;
     }

@@ -125,10 +125,7 @@ var Renderer = (function () {
         var sx = toX(pos.x);
         var sy = toY(pos.y);
 
-        var fill = 'hsla(' + body.color.h + ', ' + body.color.s + '%, ' + body.color.l + '%, 0.6)';
-        var stroke = 'hsl(' + body.color.h + ', ' + body.color.s + '%, ' + body.color.l + '%)';
-
-       // Draw wheels first (behind axles)
+        // Draw wheels first (behind axles)
         if (body.wheels) {
             body.wheels.forEach(function(wheel) {
                 if (!wheel) return;
@@ -150,7 +147,6 @@ var Renderer = (function () {
                 ctx.lineWidth = 1;
                 ctx.stroke();
 
-                // Rotation radius
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
                 ctx.lineTo(wr, 0);
@@ -161,23 +157,24 @@ var Renderer = (function () {
             });
         }
 
-        // Draw dynamic axles on top
+        // Draw dynamic axles on top — per-axle color
         if (body.axles) {
-            body.axles.forEach(function(axle) {
+            body.axles.forEach(function(axle, idx) {
                 if (!axle) return;
                 var aPos = axle.getPosition();
                 var aAngle = axle.getAngle();
                 var ax = toX(aPos.x);
                 var ay = toY(aPos.y);
 
+                var axleColor = body.axleColors && body.axleColors[idx] ? body.axleColors[idx] : 'rgb(128,128,128)';
+
                 ctx.save();
                 ctx.translate(ax, ay);
                 ctx.rotate(-aAngle);
-                ctx.fillStyle = fill;
-                ctx.strokeStyle = stroke;
+                ctx.fillStyle = axleColor;
+                ctx.strokeStyle = axleColor;
                 ctx.lineWidth = 1;
 
-                // Draw all BoxShape fixtures on this axle body
                 var fix = axle.getFixtureList();
                 while (fix) {
                     var shape = fix.getShape();
@@ -205,55 +202,64 @@ var Renderer = (function () {
         ctx.lineWidth = 1.5;
 
         var verts = body.vertices;
+        var segColors = body.colors;
+        var NUM = segColors ? segColors.length : 8;
 
-        // Fill the whole chassis as one polygon to avoid seams
-        ctx.beginPath();
-        ctx.moveTo(verts[0][0] * scale, -verts[0][1] * scale);
-        for (var i = 1; i < verts.length; i++) {
-            ctx.lineTo(verts[i][0] * scale, -verts[i][1] * scale);
-        }
-        ctx.lineTo(verts[1][0] * scale, -verts[1][1] * scale);
-        ctx.closePath();
-        ctx.fillStyle = fill;
-        ctx.fill();
-
-        // Stroke the outer boundary
-        ctx.beginPath();
-        ctx.moveTo(verts[1][0] * scale, -verts[1][1] * scale);
-        for (var j = 2; j < verts.length; j++) {
-            ctx.lineTo(verts[j][0] * scale, -verts[j][1] * scale);
-        }
-        ctx.closePath();
-        ctx.strokeStyle = stroke;
-        ctx.stroke();
-
-        // Stroke internal spokes (Center to each vertex)
-        ctx.beginPath();
+        // Stroke internal spokes — colored like the segment they lead to
         var centerX = verts[0][0] * scale;
         var centerY = -verts[0][1] * scale;
         for (var k = 1; k < verts.length; k++) {
+            var spokeCol = segColors[k - 1] || 'rgb(128,128,128)';
+            ctx.beginPath();
             ctx.moveTo(centerX, centerY);
             ctx.lineTo(verts[k][0] * scale, -verts[k][1] * scale);
+            ctx.strokeStyle = spokeCol;
+            ctx.stroke();
         }
-        ctx.stroke();
 
-        // Draw suspension mounts (static parts on chassis)
-        var fixture = body.getFixtureList();
-        while (fixture) {
-            var shape = fixture.getShape();
-            if (shape.m_vertices && shape.m_vertices.length === 4) {
+        // Draw each triangle segment with its own color
+        for (var i = 0; i < NUM; i++) {
+            var v0 = verts[0];
+            var v1 = verts[i + 1];
+            var v2 = verts[(i + 2) > NUM ? 1 : i + 2];
+
+            var col = segColors[i] || 'rgb(128,128,128)';
+
+            ctx.beginPath();
+            ctx.moveTo(v0[0] * scale, -v0[1] * scale);
+            ctx.lineTo(v1[0] * scale, -v1[1] * scale);
+            ctx.lineTo(v2[0] * scale, -v2[1] * scale);
+            ctx.closePath();
+            ctx.fillStyle = col.replace('rgb', 'rgba').replace(')', ',0.6)');
+            ctx.fill();
+            ctx.strokeStyle = col;
+            ctx.stroke();
+        }
+
+        // Draw suspension mounts — color of the segment they're attached to
+        var mountFix = body.getFixtureList();
+        while (mountFix) {
+            var mShape = mountFix.getShape();
+            if (mShape.m_vertices && mShape.m_vertices.length === 4) {
+                var wIdx = mountFix.wheelIndex;
+                var mountCol = 'rgb(128,128,128)';
+                if (wIdx !== undefined && body.axleShapeSlots && body.axleShapeSlots[wIdx]) {
+                    var segIdx = body.axleShapeSlots[wIdx].colorIndex;
+                    mountCol = segColors[segIdx] || mountCol;
+                }
+
                 ctx.beginPath();
-                ctx.moveTo(shape.m_vertices[0].x * scale, -shape.m_vertices[0].y * scale);
+                ctx.moveTo(mShape.m_vertices[0].x * scale, -mShape.m_vertices[0].y * scale);
                 for (var vIdx = 1; vIdx < 4; vIdx++) {
-                    ctx.lineTo(shape.m_vertices[vIdx].x * scale, -shape.m_vertices[vIdx].y * scale);
+                    ctx.lineTo(mShape.m_vertices[vIdx].x * scale, -mShape.m_vertices[vIdx].y * scale);
                 }
                 ctx.closePath();
-                ctx.fillStyle = fill;
+                ctx.fillStyle = mountCol.replace('rgb', 'rgba').replace(')', ',0.6)');
                 ctx.fill();
-                ctx.strokeStyle = stroke;
+                ctx.strokeStyle = mountCol;
                 ctx.stroke();
             }
-            fixture = fixture.getNext();
+            mountFix = mountFix.getNext();
         }
 
         ctx.restore();
