@@ -50,7 +50,7 @@ var Renderer = (function () {
     };
 
     Renderer.prototype.updateCamera = function () {
-        this.cameraX += (this.targetX - this.cameraX) * CAMERA_SMOOTH;
+        this.cameraX = this.targetX;
         this.cameraY += (this.targetY - this.cameraY) * CAMERA_SMOOTH;
     };
 
