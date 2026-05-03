@@ -16,15 +16,37 @@
     });
 
     var POPULATION_SIZE = 32;
+    var KEEP_COUNT = 16;
     var _population = [];
+    var _results = [];
     var _carIndex = 0;
     var _generation = 0;
 
-    function startGeneration() {
-        _population = [];
-        for (var i = 0; i < POPULATION_SIZE; i++) {
-            _population.push(Chromosome.generate());
+    function startGeneration(prevPopulation, prevResults) {
+        if (_generation === 0) {
+            _population = [];
+            for (var i = 0; i < POPULATION_SIZE; i++) {
+                _population.push(Chromosome.generate());
+            }
         }
+        else {
+            var indexed = [];
+            for (var k = 0; k < POPULATION_SIZE; k++) {
+                indexed.push({ chromo: prevPopulation[k], score: prevResults[k].score, time: prevResults[k].time });
+            }
+            indexed.sort(function (a, b) {
+                if (b.score !== a.score) return b.score - a.score;
+                return a.time - b.time;
+            });
+            _population = [];
+            for (var j = 0; j < KEEP_COUNT; j++) {
+                _population.push(indexed[j].chromo);
+            }
+            for (var m = 0; m < KEEP_COUNT; m++) {
+                _population.push(Chromosome.generate());
+            }
+        }
+        _results = [];
         _carIndex = 0;
     }
 
@@ -57,11 +79,12 @@
                             HUD.resetRuns();
                         }
                         HUD.saveRun(_carIndex, world.getScore(), world.getTime());
+                        _results.push({ score: world.getScore(), time: world.getTime() });
                         _carIndex++;
 
                         if (_carIndex >= POPULATION_SIZE) {
                             _generation++;
-                            startGeneration();
+                            startGeneration(_population, _results);
                         }
 
                         world.reset(_population[_carIndex]);

@@ -74,8 +74,10 @@ At init, all 16 slots get the same random RGB (like original C++).
 
 ## Population (js/game.js)
 
-- `POPULATION_SIZE = 32` — 32 random chromosomes per generation.
-- Cars run sequentially. When one stops → `HUD.saveRun()`, next car. When all 32 stop → new generation.
+- `POPULATION_SIZE = 32`, `KEEP_COUNT = 16`.
+- Cars run sequentially. When one stops → `HUD.saveRun()`, result stored in `_results[]` as `{score, time}`.
+- **Selection:** Generation 0 = 32 random. Subsequent generations: sort previous population by score desc (tiebreaker: time asc), keep top 16, add 16 new random chromosomes.
+- When all 32 stop → `startGeneration(_population, _results)` → new generation.
 
 ## HUD (js/hud.js)
 
