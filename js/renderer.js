@@ -236,17 +236,13 @@ var Renderer = (function () {
             ctx.stroke();
         }
 
-        // Draw suspension mounts — color of the segment they're attached to
+        // Draw suspension mounts — color of the axle they belong to
         var mountFix = body.getFixtureList();
         while (mountFix) {
             var mShape = mountFix.getShape();
             if (mShape.m_vertices && mShape.m_vertices.length === 4) {
                 var wIdx = mountFix.wheelIndex;
-                var mountCol = 'rgb(128,128,128)';
-                if (wIdx !== undefined && body.axleShapeSlots && body.axleShapeSlots[wIdx]) {
-                    var segIdx = body.axleShapeSlots[wIdx].colorIndex;
-                    mountCol = segColors[segIdx] || mountCol;
-                }
+                var mountCol = body.axleColors && body.axleColors[wIdx] ? body.axleColors[wIdx] : 'rgb(128,128,128)';
 
                 ctx.beginPath();
                 ctx.moveTo(mShape.m_vertices[0].x * scale, -mShape.m_vertices[0].y * scale);

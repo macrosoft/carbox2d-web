@@ -24,14 +24,14 @@ Each car is defined by a chromosome: `{ genes: Float32Array(40), colors: Uint8Ar
 | `16+i*3+1` (i=0..7) | axle angle slot i | `v * 2π` |
 | `16+i*3+2` (i=0..7) | wheel radius slot i | `v * 1.4 + 0.1` → [0.1, 1.5] |
 
-**`colors[48]`** — 16 RGB triples, values 0-255:
+**`colors[16][3]`** — 16 RGB triples, values 0-255:
 
-| Indices | Field |
-|---------|-------|
-| `i*3 .. i*3+2` (i=0..7) | chassis segment i — RGB |
-| `24+i*3 .. 24+i*3+2` (i=0..7) | axle slot i — RGB |
+| Slot | Field |
+|------|-------|
+| `colors[0..7]` | chassis segment 0-7 — `[r, g, b]` |
+| `colors[8..15]` | axle slot 0-7 — `[r, g, b]` |
 
-At init, all 16 color slots get the same random RGB (like original C++).
+At init, all 16 slots get the same random RGB (like original C++).
 
 **`js/chromosome.js`** — `Chromosome.generate()` creates a new random chromosome.
 

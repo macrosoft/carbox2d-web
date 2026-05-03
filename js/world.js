@@ -74,19 +74,19 @@ var World = (function () {
         var decoded = decodeChromosome(chromo.genes);
         var NUM = 8;
 
-        var segColors = [];
-        var col = chromo.colors;
+      var segColors = [];
         for (var i = 0; i < NUM; i++) {
-            segColors.push('rgb(' + col[i * 3] + ',' + col[i * 3 + 1] + ',' + col[i * 3 + 2] + ')');
+            var c = chromo.colors[i];
+            segColors.push('rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')');
         }
 
         var axleColors = [];
         for (var i = 0; i < NUM; i++) {
-            var idx = 24 + i * 3;
-            axleColors.push('rgb(' + col[idx] + ',' + col[idx + 1] + ',' + col[idx + 2] + ')');
+            var c = chromo.colors[8 + i];
+            axleColors.push('rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')');
         }
 
-        var chassis = worldInstance.createBody({
+      var chassis = worldInstance.createBody({
             type: 'dynamic',
             position: planck.Vec2(-500, 5),
             allowSleep: false,

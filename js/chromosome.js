@@ -17,14 +17,12 @@ var Chromosome = (function () {
             genes[16 + i * 3 + 2] = Math.random();
         }
 
-        var colors = new Uint8Array(COLORS_SIZE);
         var r = Math.floor(Math.random() * 256);
         var g = Math.floor(Math.random() * 256);
         var b = Math.floor(Math.random() * 256);
-        for (var i = 0; i < COLORS_SIZE; i += 3) {
-            colors[i] = r;
-            colors[i + 1] = g;
-            colors[i + 2] = b;
+        var colors = [];
+        for (var i = 0; i < 16; i++) {
+            colors.push([r, g, b]);
         }
 
         return {
