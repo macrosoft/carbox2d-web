@@ -16,20 +16,19 @@
     });
 
     var POPULATION_SIZE = 32;
-    var KEEP_COUNT = 16;
     var _population = [];
     var _results = [];
     var _carIndex = 0;
     var _generation = 0;
 
     function startGeneration(prevPopulation, prevResults) {
+        _population = [];
+
         if (_generation === 0) {
-            _population = [];
             for (var i = 0; i < POPULATION_SIZE; i++) {
                 _population.push(Chromosome.generate());
             }
-        }
-        else {
+        } else {
             var indexed = [];
             for (var k = 0; k < POPULATION_SIZE; k++) {
                 indexed.push({ chromo: prevPopulation[k], score: prevResults[k].score, time: prevResults[k].time });
@@ -38,12 +37,30 @@
                 if (b.score !== a.score) return b.score - a.score;
                 return a.time - b.time;
             });
-            _population = [];
-            for (var j = 0; j < KEEP_COUNT; j++) {
-                _population.push(indexed[j].chromo);
-            }
-            for (var m = 0; m < KEEP_COUNT; m++) {
+
+            _population.push(Chromosome.clone(indexed[0].chromo));
+
+            for (var n = 0; n < 3; n++) {
                 _population.push(Chromosome.generate());
+            }
+
+            var indices = [];
+            for (var p = 0; p < POPULATION_SIZE; p++) {
+                indices.push(p);
+            }
+            for (var q = indices.length - 1; q > 0; q--) {
+                var swapIdx = Math.floor(Math.random() * (q + 1));
+                var tmp = indices[q];
+                indices[q] = indices[swapIdx];
+                indices[swapIdx] = tmp;
+            }
+
+            for (var pair = 0; pair < 14; pair++) {
+                var pa = indexed[indices[pair * 2]].chromo;
+                var pb = indexed[indices[pair * 2 + 1]].chromo;
+                var result = Chromosome.crossover(pa, pb);
+                _population.push(result.offspringA);
+                _population.push(result.offspringB);
             }
         }
         _results = [];

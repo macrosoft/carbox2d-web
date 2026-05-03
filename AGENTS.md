@@ -33,7 +33,7 @@ Each car is defined by a chromosome: `{ genes: Float32Array(40), colors: Uint8Ar
 
 At init, all 16 slots get the same random RGB (like original C++).
 
-**`js/chromosome.js`** — `Chromosome.generate()` creates a new random chromosome.
+**`js/chromosome.js`** — `Chromosome.generate()` creates a new random chromosome. `Chromosome.crossover(parentA, parentB)` performs two-point crossover producing two reciprocal offspring. `Chromosome.clone(chromo)` performs a deep copy.
 
 ## Chassis
 
@@ -74,9 +74,11 @@ At init, all 16 slots get the same random RGB (like original C++).
 
 ## Population (js/game.js)
 
-- `POPULATION_SIZE = 32`, `KEEP_COUNT = 16`.
+- `POPULATION_SIZE = 32`.
 - Cars run sequentially. When one stops → `HUD.saveRun()`, result stored in `_results[]` as `{score, time}`.
-- **Selection:** Generation 0 = 32 random. Subsequent generations: sort previous population by score desc (tiebreaker: time asc), keep top 16, add 16 new random chromosomes.
+- **Selection:** Generation 0 = 32 random. Subsequent generations: sort previous population by score desc (tiebreaker: time asc). Slot 0 = exact clone of top-1 (elitism). Slots 1-3 = new random chromosomes. Slots 4-31 = 14 pairs of crossover offspring from randomly shuffled parent pool (no repeats).
+- **Crossover:** Two-point crossover (`Chromosome.crossover()`). Two random breakpoints `bend0`, `bend1` in `[0, 40)`. Offspring A inherits genes from parent A outside `[bend0, bend1]` and from parent B inside. Offspring B is reciprocal. Colors follow genes: chassis gene indices `0,2,4..14` → color slots `0..7`; wheel gene indices `16,19,22..37` → color slots `8..15`.
+- No mutation.
 - When all 32 stop → `startGeneration(_population, _results)` → new generation.
 
 ## HUD (js/hud.js)
