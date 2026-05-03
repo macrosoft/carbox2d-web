@@ -26,7 +26,9 @@
 
         if (_generation === 0) {
             for (var i = 0; i < POPULATION_SIZE; i++) {
-                _population.push(Chromosome.generate());
+                var chromo = Chromosome.generate();
+                chromo.parents = null;
+                _population.push(chromo);
             }
         } else {
             var indexed = [];
@@ -39,9 +41,12 @@
             });
 
             _population.push(Chromosome.clone(indexed[0].chromo));
+            _population[_population.length - 1].parents = [indexed[0].chromo];
 
             for (var n = 0; n < 3; n++) {
-                _population.push(Chromosome.generate());
+                var chromo = Chromosome.generate();
+                chromo.parents = null;
+                _population.push(chromo);
             }
 
             var indices = [];
@@ -58,9 +63,12 @@
             for (var pair = 0; pair < 14; pair++) {
                 var pa = indexed[indices[pair * 2]].chromo;
                 var pb = indexed[indices[pair * 2 + 1]].chromo;
-                var result = Chromosome.crossover(pa, pb);
-                _population.push(result.offspringA);
-                _population.push(result.offspringB);
+            var result = Chromosome.crossover(pa, pb);
+            result.offspringA.parents = [pa, pb];
+            result.offspringB.parents = [pa, pb];
+            _population.push(result.offspringA);
+            _population.push(result.offspringB);
+
             }
         }
         _results = [];
@@ -116,7 +124,7 @@
 
             var pos = world.getChassisPos();
             renderer.follow(pos.x, pos.y);
-            renderer.draw(world.chassis);
+            renderer.draw(world.chassis, world.chromo.parents);
             HUD.update(world);
             HUD.updateGeneration(_generation, _carIndex);
             HUD.setPause(_paused);

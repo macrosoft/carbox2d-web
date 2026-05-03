@@ -17,7 +17,7 @@ An evolution simulator for cars, inspired by [boxcar2d.com](http://boxcar2d.com)
 - HUD overlay: score (bottom-center), time/torque/speed (top-right) in red
 - Auto-restart on stop conditions: time expiry (5 min), stuck detection (3–5 sec stall), track end, or backward roll
 - Deterministic restart: same car re-runs on each reset for debugging
-- Evolution: population of 32 cars, top-1 survives (elitism), 3 new random cars, 28 cars from two-point crossover (14 pairs from shuffled parent pool)
+- Evolution: population of 32 cars, top-1 survives (elitism), 3 new random cars, 28 cars from two-point crossover (14 pairs from shuffled parent pool). Ancestor cars are visualized in thumbnails during runs.
 
 ## Tech Stack
 

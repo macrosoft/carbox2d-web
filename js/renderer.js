@@ -54,7 +54,83 @@ var Renderer = (function () {
         this.cameraY += (this.targetY - this.cameraY) * CAMERA_SMOOTH;
     };
 
-    Renderer.prototype.draw = function (chassis) {
+    Renderer.prototype.drawLightChassis = function (geometry, x, y, scale, angle) {
+        var ctx = this.ctx;
+        var sx = x * scale;
+        var sy = -y * scale;
+
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(-angle);
+
+        // Wheels
+        if (geometry.wheels) {
+            geometry.wheels.forEach(function(wheel) {
+                if (!wheel) return;
+                var wx = wheel.pos.x * scale;
+                var wy = -wheel.pos.y * scale;
+                var wr = wheel.radius * scale;
+
+                ctx.save();
+                ctx.translate(wx, wy);
+                ctx.rotate(-wheel.angle);
+                ctx.beginPath();
+                ctx.arc(0, 0, wr, 0, 2 * Math.PI);
+                ctx.fillStyle = COLOR_TRACK;
+                ctx.fill();
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                ctx.restore();
+            });
+        }
+
+        // Axles
+        if (geometry.wheels) {
+            geometry.wheels.forEach(function(wheel, idx) {
+                if (!wheel) return;
+                var ax = wheel.pos.x * scale;
+                var ay = -wheel.pos.y * scale;
+                var axleColor = geometry.axleColors && geometry.axleColors[idx] ? geometry.axleColors[idx] : 'rgb(128,128,128)';
+
+                ctx.save();
+                ctx.translate(ax, ay);
+                ctx.rotate(-wheel.angle);
+                ctx.fillStyle = axleColor;
+                ctx.strokeStyle = axleColor;
+                ctx.lineWidth = 1;
+                ctx.fillRect(-0.2 * scale, -0.05 * scale, 0.4 * scale, 0.1 * scale);
+                ctx.strokeRect(-0.2 * scale, -0.05 * scale, 0.4 * scale, 0.1 * scale);
+                ctx.restore();
+            });
+        }
+
+        // Chassis
+        var verts = geometry.vertices;
+        var segColors = geometry.colors;
+        var NUM = segColors ? segColors.length : 8;
+        ctx.lineWidth = 1;
+
+        for (var i = 0; i < NUM; i++) {
+            var v0 = verts[0];
+            var v1 = verts[i + 1];
+            var v2 = verts[(i + 2) > NUM ? 1 : i + 2];
+            var col = segColors[i] || 'rgb(128,128,128)';
+            ctx.beginPath();
+            ctx.moveTo(v0[0] * scale, -v0[1] * scale);
+            ctx.lineTo(v1[0] * scale, -v1[1] * scale);
+            ctx.lineTo(v2[0] * scale, -v2[1] * scale);
+            ctx.closePath();
+            ctx.fillStyle = col.replace('rgb', 'rgba').replace(')', ',0.6)');
+            ctx.fill();
+            ctx.strokeStyle = col;
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    };
+
+    Renderer.prototype.draw = function (chassis, parentChromos) {
         this.resize();
         this.updateCamera();
 
@@ -114,6 +190,30 @@ var Renderer = (function () {
         // Chassis
         if (chassis) {
             this.drawChassis(chassis, toX, toY, scale);
+        }
+
+        if (parentChromos && parentChromos.length > 0) {
+            var frameW = 120;
+            var frameH = 72;
+            var frameX = w - frameW - 20;
+            var frameY = h - frameH - 20;
+            var pScale = 12;
+            var self = this;
+
+            parentChromos.forEach(function(pc, idx) {
+                var px = frameX - idx * (frameW + 10);
+                var py = frameY;
+                ctx.fillStyle = 'rgba(255, 255, 200, 0.7)';
+                ctx.fillRect(px, py, frameW, frameH);
+                ctx.strokeStyle = '#888';
+                ctx.strokeRect(px, py, frameW, frameH);
+
+                var geom = World.getCarGeometry(pc);
+                ctx.save();
+                ctx.translate(px + frameW / 2, py + frameH / 2);
+                self.drawLightChassis(geom, 0, 0, pScale, 0);
+                ctx.restore();
+            });
         }
     };
 

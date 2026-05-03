@@ -20,6 +20,49 @@ var World = (function () {
         return trackBody;
     }
 
+    function getCarGeometry(chromo) {
+        var decoded = decodeChromosome(chromo.genes);
+        var NUM = 8;
+        var segColors = [];
+        for (var i = 0; i < NUM; i++) {
+            var c = chromo.colors[i];
+            segColors.push('rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')');
+        }
+        var axleColors = [];
+        for (var i = 0; i < NUM; i++) {
+            var c = chromo.colors[8 + i];
+            axleColors.push('rgb(' + c[0] + ',' + c[1] + ',' + c[2] + ')');
+        }
+        var vertices = [[0, 0]];
+        for (var i = 0; i < NUM; i++) {
+            var p1x = decoded.mags[i] * Math.cos(decoded.angles[i]);
+            var p1y = decoded.mags[i] * Math.sin(decoded.angles[i]);
+            vertices.push([p1x, p1y]);
+        }
+        var wheels = [];
+        for (var i = 0; i < decoded.wheelOn.length; i++) {
+            var segIdx = decoded.wheelOn[i];
+            if (segIdx !== -1) {
+                var angle = decoded.angles[segIdx];
+                var mag = decoded.mags[segIdx];
+                wheels.push({
+                    pos: { x: mag * Math.cos(angle), y: mag * Math.sin(angle) },
+                    angle: decoded.axleAngles[i],
+                    radius: decoded.wheelRadii[i],
+                    index: i
+                });
+            } else {
+                wheels.push(null);
+            }
+        }
+        return {
+            vertices: vertices,
+            colors: segColors,
+            axleColors: axleColors,
+            wheels: wheels
+        };
+    }
+
     function decodeChromosome(genes) {
         var angles = [];
         var mags = [];
@@ -463,5 +506,5 @@ var World = (function () {
         return new World(chromo);
     }
 
-    return { load: loadTrack, World: World, reset: resetWorld };
+    return { load: loadTrack, World: World, reset: resetWorld, getCarGeometry: getCarGeometry };
 })();

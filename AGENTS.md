@@ -61,6 +61,7 @@ At init, all 16 slots get the same random RGB (like original C++).
 - Axles: per-slot color from `body.axleColors[]`.
 - Mounts: color of the segment they're attached to.
 - Wheels: dark circles with rotation radius line.
+- Parent thumbnails: rendered in small frames in the bottom-right corner if parents exist.
 - Camera: `CAMERA_Y_OFFSET = 2` (js/config.js), X instant, Y smooth lerp.
 
 ## Game State (js/world.js)
@@ -77,7 +78,7 @@ At init, all 16 slots get the same random RGB (like original C++).
 - `POPULATION_SIZE = 32`.
 - Cars run sequentially. When one stops → `HUD.saveRun()`, result stored in `_results[]` as `{score, time}`.
 - **Selection:** Generation 0 = 32 random. Subsequent generations: sort previous population by score desc (tiebreaker: time asc). Slot 0 = exact clone of top-1 (elitism). Slots 1-3 = new random chromosomes. Slots 4-31 = 14 pairs of crossover offspring from randomly shuffled parent pool (no repeats).
-- **Crossover:** Two-point crossover (`Chromosome.crossover()`). Two random breakpoints `bend0`, `bend1` in `[0, 40)`. Offspring A inherits genes from parent A outside `[bend0, bend1]` and from parent B inside. Offspring B is reciprocal. Colors follow genes: chassis gene indices `0,2,4..14` → color slots `0..7`; wheel gene indices `16,19,22..37` → color slots `8..15`.
+- **Crossover:** Two-point crossover (`Chromosome.crossover()`). Two random breakpoints `bend0`, `bend1` in `[0, 40)`. Offspring A inherits genes from parent A outside `[bend0, bend1]` and from parent B inside. Offspring B is reciprocal. Colors follow genes: chassis gene indices `0,2,4..14` → color slots `0..7`; wheel gene indices `16,19,22..37` → color slots `8..15`. Each car stores references to its parent chromosomes for visualization.
 - No mutation.
 - When all 32 stop → `startGeneration(_population, _results)` → new generation.
 
