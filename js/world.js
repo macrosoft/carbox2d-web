@@ -124,6 +124,7 @@ var World = (function () {
         chassis.axleShapeSlots = [];
         chassis.colors = segColors;
         chassis.axleColors = axleColors;
+        chassis._brokenPartsActive = false;
 
         for (var i = 0; i < decoded.wheelOn.length; i++) {
             var segIdx = decoded.wheelOn[i];
@@ -320,6 +321,14 @@ var World = (function () {
 
     World.prototype.processBreakage = function () {
         var chassis = this.chassis;
+        if (!chassis._brokenPartsActive) {
+            chassis._brokenPartsActive = true;
+            var fixture;
+            for (fixture = chassis.getFixtureList(); fixture; fixture = fixture.getNext()) {
+                fixture.setFilterMaskBits(0x0003);
+                fixture.refilter();
+            }
+        }
         for (var i = 0; i < chassis.axleBreakFlags.length; i++) {
             if (!chassis.axleBreakFlags[i]) continue;
             chassis.axleBreakFlags[i] = false;
@@ -350,7 +359,7 @@ var World = (function () {
                 slot.body.createFixture(
                     new planck.BoxShape(0.2, 0.05, planck.Vec2(-0.3, 0), 0),
                     { density: 20, friction: 10, restitution: 0.05,
-                      filterCategoryBits: 0x0001, filterMaskBits: 0x0002, filterGroupIndex: -1 }
+                      filterCategoryBits: 0x0001, filterMaskBits: 0x0003 }
                 );
 
                // Recreate mount box on axle body (was on chassis, now flies with axle)
@@ -358,7 +367,7 @@ var World = (function () {
                 slot.body.createFixture(
                     new planck.BoxShape(0.2, 0.1, planck.Vec2(0, 0), 0),
                     { density: 2, friction: 10, restitution: 0.05,
-                      filterCategoryBits: 0x0001, filterMaskBits: 0x0002, filterGroupIndex: -1 }
+                      filterCategoryBits: 0x0001, filterMaskBits: 0x0003 }
                 );
             }
 
