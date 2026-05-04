@@ -1,106 +1,58 @@
 # Project Rules: HTML5 + Planck.js
 
 ## Physics (Planck.js)
-- We use `planck.js`, not the original `Box2D`.
+- Use `planck.js` (no `b2` prefix). Methods are `lowerCamelCase`.
 - Documentation: `@docs/planck.d.ts`
-- Planck.js dropped the `b2` prefix. Use `planck.World`, `planck.Body`, `planck.Vec2`.
-- Methods use `lowerCamelCase` (e.g., `world.createBody()`).
-- Definition objects are replaced with plain JS objects.
-  *CORRECT:* `world.createBody({ type: 'dynamic', position: planck.Vec2(0, 0) })`
-  *INCORRECT:* `let def = new planck.BodyDef();`
+- Use plain JS objects for definitions instead of `BodyDef`.
 - Shapes are immutable.
 
 ## Chromosome (DNA)
+Chromosome: `{ genes: Float32Array(40), colors: Uint8Array(48) }`.
+`genes[40]` decoded in `world.js`:
+- `j*2` (0..7): angle segment j (`v*0.92+0.08`, normalized sum 2π).
+- `j*2+1` (0..7): magnitude segment j (`v*2.9+0.1` → [0.1, 3.0]).
+- `16+i*3` (0..7): wheel-on slot i (<=0.5 active).
+- `16+i*3+1` (0..7): axle angle slot i (`v*2π`).
+- `16+i*3+2` (0..7): wheel radius slot i (`v*1.4+0.1` → [0.1, 1.5]).
 
-Each car is defined by a chromosome: `{ genes: Float32Array(40), colors: Uint8Array(48) }`.
+Colors: 16 RGB triples (0-255). Slots 0-7: chassis; 8-15: axles.
 
-**`genes[40]`** — all values in [0, 1], decoded by `decodeChromosome()` in `world.js`:
-
-| Indices | Field | Decode |
-|---------|-------|--------|
-| `j*2` (j=0..7) | raw angle segment j | `v * 0.92 + 0.08`, normalized so sum = 2π, cumulative |
-| `j*2+1` (j=0..7) | magnitude segment j | `v * 2.9 + 0.1` → [0.1, 3.0] |
-| `16+i*3` (i=0..7) | wheel-on slot i | `<= 0.5` → active on segment i, `> 0.5` → no wheel |
-| `16+i*3+1` (i=0..7) | axle angle slot i | `v * 2π` |
-| `16+i*3+2` (i=0..7) | wheel radius slot i | `v * 1.4 + 0.1` → [0.1, 1.5] |
-
-**`colors[16][3]`** — 16 RGB triples, values 0-255:
-
-| Slot | Field |
-|------|-------|
-| `colors[0..7]` | chassis segment 0-7 — `[r, g, b]` |
-| `colors[8..15]` | axle slot 0-7 — `[r, g, b]` |
-
-At init, all 16 slots get the same random RGB (like original C++).
-
-**`js/chromosome.js`** — `Chromosome.generate()` creates a new random chromosome. `Chromosome.crossover(parentA, parentB)` performs two-point crossover producing two reciprocal offspring. `Chromosome.clone(chromo)` performs a deep copy.
-
-## Chassis
-
-- 8 triangular segments forming a fan shape.
-- Wheel slot `i` maps 1-to-1 to segment `i` (50% chance active).
-- Physics: density=2, friction=10, restitution=0.05.
-- Suspension: `PrismaticJoint` with limits (-0.1, 0.25), custom spring-damper motor in `World.step`.
-- Axle offset: -0.3 units along axle axis.
-- Wheels: `RevoluteJoint` with motor, radius random 0.1-1.5m.
-- Collision: car parts ignore each other (`filterCategoryBits`/`filterMaskBits`), only collide with track.
-- Spawn: `(-500, 5)`.
-
-## Destruction (Destructible Springs)
-
-- `post-solve` listener checks impulse on `axleMount` / `axleBodyFixture` fixtures.
-- Break threshold: `BREAK_STRENGTH * fixture_mass` (BREAK_STRENGTH = 50).
-- On break: destroy prismatic joint, remove mount fixture, recreate boxes on axle body, disable wheel motor, recalculate torque.
-- Arrays on chassis: `mountFixtures[]`, `axleBreakFlags[]`, `wheelActive[]`, `axleShapeSlots[]` (stores `{fixture, body, localMount, mountPx, mountPy, mountAngle, colorIndex}`).
+## Chassis & Destruction
+- 8 triangular segments. Physics: density=2, friction=10, restitution=0.05.
+- Suspension: `PrismaticJoint` (-0.1, 0.25) + spring-damper motor in `World.step`.
+- Wheels: `RevoluteJoint` with motor.
+- Breakage: `post-solve` check on axle mount fixtures. Break threshold: `BREAK_STRENGTH (50) * mass`.
+- On break: destroy joint, remove mount fixture, disable motor.
 
 ## Rendering
-
-- HTML5 Canvas API.
-- Chassis: 8 individual triangle segments, each drawn with its own color from `body.colors[]`.
-- Internal spokes drawn with the color of the segment they lead to.
-- Axles: per-slot color from `body.axleColors[]`.
-- Mounts: color of the segment they're attached to.
+- HTML5 Canvas.
+- Chassis: 8 colored segments.
 - Wheels: dark circles with rotation radius line.
-- Parent thumbnails: rendered in small frames in the bottom-right corner if parents exist.
-- Camera: `CAMERA_Y_OFFSET = 2` (js/config.js), X instant, Y smooth lerp.
+- Camera: `CAMERA_Y_OFFSET = 2`, X instant, Y smooth lerp.
 
 ## Game State (js/world.js)
-
-- `World` constructor: `iteration`, `maxPosition` (score, only grows), `torque` (`mass * 1.5 * 15 / 2^(wheels-1)`), `slow`, `prevDist`, `stopped`.
-- Chromosome saved as `this.chromo` for deterministic restart.
-- `TRACK_LENGTH = 1500`, `MAX_ITERATION = 18000` (5 min at 60fps).
-- `step()`: physics step, breakage processing, stop conditions (stall detection, track end, time, backward roll).
-- `reset(newChromo)`: new world + track + car, resets counters.
-- Getters: `getScore()`, `getSpeed()`, `getTorque()`, `getTime()`, `getRemainingTime()`, `isStopped()`.
+- `World`: `iteration`, `maxPosition` (score), `torque`, `slow`, `prevDist`, `stopped`.
+- `TRACK_LENGTH = 1500`, `MAX_ITERATION = 18000`.
+- `step()`: physics, breakage, stop conditions (stall, track end, time, backward roll).
 
 ## Population (js/game.js)
-
 - `POPULATION_SIZE = 32`.
-- Cars run sequentially. When one stops → `HUD.saveRun()`, result stored in `_results[]` as `{score, time}`.
-- **Selection:** Generation 0 = 32 random. Subsequent generations: sort previous population by score desc (tiebreaker: time asc). Slot 0 = exact clone of top-1 (elitism). Slots 1-3 = new random chromosomes. Slots 4-31 = 14 pairs of crossover offspring from randomly shuffled parent pool (no repeats).
-- **Crossover:** Two-point crossover (`Chromosome.crossover()`). Two random breakpoints `bend0`, `bend1` in `[0, 40)`. Offspring A inherits genes from parent A outside `[bend0, bend1]` and from parent B inside. Offspring B is reciprocal. Colors follow genes: chassis gene indices `0,2,4..14` → color slots `0..7`; wheel gene indices `16,19,22..37` → color slots `8..15`. Each car stores references to its parent chromosomes for visualization.
-- No mutation.
-- When all 32 stop → `startGeneration(_population, _results)` → new generation.
+- Selection: Generation 0 random. Then: top-1 clone (elitism), 3 random, 28 crossover (two-point, reciprocal).
+- Crossover: Two random breakpoints in `[0, 40)`. Colors follow genes.
 
 ## HUD (js/hud.js)
-
-- HTML overlay (`pointer-events: none`), lazy-init on first `update()`.
+- HTML overlay.
 - Score: red 24px, bottom 15% center.
 - Time/Torque/Speed: red 14px, top-right.
-- Time: countdown `m:ss` from 5:00.
-- Run table: left panel, yellow bg, columns `#`, `Score`, `Time`. Max 32 rows, resets at generation boundary.
+- Run table: left panel, yellow bg.
 - Generation + car index: top-center, black 14px.
+- Score Graphs: Centered canvas showing average (black) and max (red) scores per generation.
 
-## Track Data Format
-
-- Binary: `js/track_data.bin` (6000 bytes, Float32LE: `x, y, angle` × 500 segments).
-- Async load: `TrackLoader.load()` → `{count, data: Float32Array}`.
-- Game loop starts after track loads.
+## Track Data
+- Binary: `js/track_data.bin` (Float32LE: `x, y, angle` × 500 segments).
 
 ## Legacy Project
-
 - Original C++ source: `legacy_cpp` folder.
 
 ## Git
-
 - **NEVER** commit or push without explicit user permission.

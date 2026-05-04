@@ -20,6 +20,9 @@
     var _results = [];
     var _carIndex = 0;
     var _generation = 0;
+    var _avgScores = [0];
+    var _maxScores = [0];
+
 
     function startGeneration(prevPopulation, prevResults) {
         _population = [];
@@ -108,9 +111,19 @@
                         _carIndex++;
 
                         if (_carIndex >= POPULATION_SIZE) {
+                            var totalScore = 0;
+                            var maxScore = 0;
+                            for (var r = 0; r < _results.length; r++) {
+                                totalScore += _results[r].score;
+                                if (_results[r].score > maxScore) maxScore = _results[r].score;
+                            }
+                            _avgScores.push(totalScore / POPULATION_SIZE);
+                            _maxScores.push(maxScore);
+
                             _generation++;
                             startGeneration(_population, _results);
                         }
+
 
                         world.reset(_population[_carIndex]);
                         renderer.setCamera(world.getChassisPos().x, world.getChassisPos().y + CAMERA_Y_OFFSET);
@@ -127,7 +140,9 @@
             renderer.draw(world.chassis, world.chromo.parents);
             HUD.update(world);
             HUD.updateGeneration(_generation, _carIndex);
+            HUD.drawGraphs(_avgScores, _maxScores);
             HUD.setPause(_paused);
+
             requestAnimationFrame(frame);
         }
 

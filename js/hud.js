@@ -7,7 +7,10 @@ var HUD = (function () {
     var _tableBody = null;
     var _genEl = null;
     var _pauseEl = null;
+    var _graphCanvas = null;
+    var _graphCtx = null;
     var _runs = [];
+
     var _maxRuns = 32;
 
     function init() {
@@ -35,8 +38,10 @@ var HUD = (function () {
             '<div style="margin-top:2px;"><span id="hudTorque">Torque: 0.0</span></div>' +
             '<div style="margin-top:2px;"><span id="hudSpeed">Speed: 0.0</span></div></div>' +
 
-            '<div style="position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:14px;color:black;text-shadow:1px 1px 2px rgba(0,0,0,0.3);">' +
-            '<span id="hudGen">Generation: 0</span></div>';
+             '<div style="position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:14px;color:black;text-shadow:1px 1px 2px rgba(0,0,0,0.3);">' +
+             '<span id="hudGen">Generation: 0</span></div>' +
+             '<canvas id="hudGraph" style="position:absolute;top:60px;left:50%;transform:translateX(-50%);width:600px;height:200px;background:transparent;border:none;"></canvas>';
+
 
         document.body.appendChild(_container);
 
@@ -47,7 +52,16 @@ var HUD = (function () {
         _speedEl = document.getElementById('hudSpeed');
         _tableBody = document.getElementById('hudTableBody');
         _genEl = document.getElementById('hudGen');
+        _graphCanvas = document.getElementById('hudGraph');
+        if (_graphCanvas) {
+            _graphCtx = _graphCanvas.getContext('2d');
+            _graphCanvas.width = 600;
+            _graphCanvas.height = 200;
+        }
     }
+
+
+
 
     function formatTime(seconds) {
         seconds = Math.max(0, Math.floor(seconds));
@@ -98,6 +112,42 @@ var HUD = (function () {
     function setPause(paused) {
         if (_pauseEl) _pauseEl.style.display = paused ? 'block' : 'none';
     }
+ 
+    function drawGraphs(avgScores, maxScores) {
+        if (!_graphCtx) return;
+        var ctx = _graphCtx;
+        var w = _graphCanvas.width;
+        var h = _graphCanvas.height;
+ 
+        ctx.clearRect(0, 0, w, h);
+ 
+        if (avgScores.length < 2) return;
+ 
+        var maxVal = 0;
+        for (var i = 0; i < maxScores.length; i++) {
+            if (maxScores[i] > maxVal) maxVal = maxScores[i];
+        }
+        if (maxVal === 0) maxVal = 1;
+ 
+        var stepX = w / Math.max(1, avgScores.length - 1);
+        ctx.lineWidth = 2;
+ 
+        function drawLine(data, color) {
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            for (var i = 0; i < data.length; i++) {
+                var x = i * stepX;
+                var y = h - (data[i] / maxVal) * h;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+ 
+        drawLine(avgScores, 'black');
+        drawLine(maxScores, 'red');
+    }
+ 
+    return { init: init, update: update, saveRun: saveRun, resetRuns: resetRuns, updateGeneration: updateGeneration, setPause: setPause, drawGraphs: drawGraphs };
 
-    return { init: init, update: update, saveRun: saveRun, resetRuns: resetRuns, updateGeneration: updateGeneration, setPause: setPause };
 })();
