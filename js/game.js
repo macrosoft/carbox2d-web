@@ -23,6 +23,33 @@
     var _avgScores = [0];
     var _maxScores = [0];
 
+    function shuffle(arr) {
+        for (var q = arr.length - 1; q > 0; q--) {
+            var swapIdx = Math.floor(Math.random() * (q + 1));
+            var tmp = arr[q];
+            arr[q] = arr[swapIdx];
+            arr[swapIdx] = tmp;
+        }
+        return arr;
+    }
+
+    function calcStats(results) {
+        var totalScore = 0;
+        var maxScore = 0;
+        for (var r = 0; r < results.length; r++) {
+            totalScore += results[r].score;
+            if (results[r].score > maxScore) maxScore = results[r].score;
+        }
+        return { avg: totalScore / results.length, max: maxScore };
+    }
+
+    function handleCarFinished(world, carIndex) {
+        if (_generation > 0 && carIndex === 0) {
+            HUD.resetRuns();
+        }
+        HUD.saveRun(carIndex, world.getScore(), world.getTime());
+        _results.push({ score: world.getScore(), time: world.getTime() });
+    }
 
     function startGeneration(prevPopulation, prevResults) {
         _population = [];
@@ -56,26 +83,28 @@
             for (var p = 0; p < POPULATION_SIZE; p++) {
                 indices.push(p);
             }
-            for (var q = indices.length - 1; q > 0; q--) {
-                var swapIdx = Math.floor(Math.random() * (q + 1));
-                var tmp = indices[q];
-                indices[q] = indices[swapIdx];
-                indices[swapIdx] = tmp;
-            }
+            shuffle(indices);
 
             for (var pair = 0; pair < 14; pair++) {
                 var pa = indexed[indices[pair * 2]].chromo;
                 var pb = indexed[indices[pair * 2 + 1]].chromo;
-            var result = Chromosome.crossover(pa, pb);
-            result.offspringA.parents = [pa, pb];
-            result.offspringB.parents = [pa, pb];
-            _population.push(result.offspringA);
-            _population.push(result.offspringB);
-
+                var result = Chromosome.crossover(pa, pb);
+                result.offspringA.parents = [pa, pb];
+                result.offspringB.parents = [pa, pb];
+                _population.push(result.offspringA);
+                _population.push(result.offspringB);
             }
         }
         _results = [];
         _carIndex = 0;
+    }
+
+    function finishGeneration() {
+        var stats = calcStats(_results);
+        _avgScores.push(stats.avg);
+        _maxScores.push(stats.max);
+        _generation++;
+        startGeneration(_population, _results);
     }
 
     TrackLoader.load().then(function (track) {
@@ -103,27 +132,12 @@
                     accumulator -= TIME_STEP;
 
                     if (world.isStopped()) {
-                        if (_generation > 0 && _carIndex === 0) {
-                            HUD.resetRuns();
-                        }
-                        HUD.saveRun(_carIndex, world.getScore(), world.getTime());
-                        _results.push({ score: world.getScore(), time: world.getTime() });
+                        handleCarFinished(world, _carIndex);
                         _carIndex++;
 
                         if (_carIndex >= POPULATION_SIZE) {
-                            var totalScore = 0;
-                            var maxScore = 0;
-                            for (var r = 0; r < _results.length; r++) {
-                                totalScore += _results[r].score;
-                                if (_results[r].score > maxScore) maxScore = _results[r].score;
-                            }
-                            _avgScores.push(totalScore / POPULATION_SIZE);
-                            _maxScores.push(maxScore);
-
-                            _generation++;
-                            startGeneration(_population, _results);
+                            finishGeneration();
                         }
-
 
                         world.reset(_population[_carIndex]);
                         renderer.setCamera(world.getChassisPos().x, world.getChassisPos().y + CAMERA_Y_OFFSET);
