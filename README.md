@@ -10,7 +10,8 @@ An evolution simulator for cars, inspired by [boxcar2d.com](http://boxcar2d.com)
 
 - **Evolution**: Population of 32 cars evolving via a genetic algorithm with elitism and two-point crossover.
 - **Procedural Generation**: Randomly generated chassis (8 triangular segments) and suspension systems.
-- **Physics**: Dynamic motorized wheels and destructible suspension joints that break under heavy impact.
+- **Physics**: Dynamic motorized wheels with realistic suspension.
+- **Destructible Chassis**: Segments break off under heavy impact, creating debris; wheels on broken segments are lost; car is destroyed when 7+ segments break.
 
 ## Tech Stack
 

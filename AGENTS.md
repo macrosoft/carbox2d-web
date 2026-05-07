@@ -42,11 +42,21 @@ Chromosome: `{ genes: Float32Array(40), colors: Uint8Array(48) }`.
 Colors: 16 RGB triples (0-255). Slots 0-7: chassis; 8-15: axles.
 
 ## Chassis & Destruction
-- 8 triangular segments. Physics: density=2, friction=10, restitution=0.05.
+- 8 triangular segments on a single dynamic body. Physics: density=2, friction=10, restitution=0.05.
+- Each segment fixture has `fixture.segmentIndex` (0..7) for breakage identification.
+- `chassis.segFixtures[]` — array of segment fixtures; set to `null` when broken.
+- `chassis.segmentBreakFlags[]` — boolean flags set in `onPostSolve`.
+- `chassis.debris[]` — array of `{ body, color }` for broken-off pieces.
+- `chassis.brokeNum` — count of broken segments (max 7).
+- `chassis.wheelOnSegment[]` — maps wheel index → segment index.
 - Suspension: `PrismaticJoint` (-0.1, 0.25) + spring-damper motor in `World.step`.
 - Wheels: `RevoluteJoint` with motor.
-- Breakage: `post-solve` check on axle mount fixtures. Break threshold: `BREAK_STRENGTH (50) * mass`.
-- On break: destroy joint, remove mount fixture, disable motor.
+- Breakage: `post-solve` check on both axle mount fixtures AND chassis segment fixtures. Break threshold: `BREAK_STRENGTH (50) * fixtureMass` (mass via `fixture.getMassData(md)`).
+- `breakSegment(i)`: clones fixture shape, creates independent debris body at chassis position/velocity, destroys original fixture, marks `segFixtures[i] = null`.
+- On segment break: cascade-destroy any wheels mounted on that segment (joint, mount fixture, motor disable).
+- `processBreakage()`: called after each `world.step()`. Processes both segment and axle breakage flags. Recalculates torque after each break.
+- Stop condition: `chassis.brokeNum >= 7` (car destroyed).
+- Rendering: `drawDebrisPiece()` renders broken pieces as independent physics bodies with their original color.
 
 ## Rendering
 - HTML5 Canvas.

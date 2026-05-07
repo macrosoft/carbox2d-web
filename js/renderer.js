@@ -217,17 +217,17 @@ var Renderer = (function () {
         }
     };
 
-    Renderer.prototype.drawChassis = function (body, toX, toY, scale) {
+    Renderer.prototype.drawChassis = function (chassis, toX, toY, scale) {
         var ctx = this.ctx;
-        var pos = body.getPosition();
-        var angle = body.getAngle();
 
-        var sx = toX(pos.x);
-        var sy = toY(pos.y);
+        if (chassis.debris) {
+            for (var d = 0; d < chassis.debris.length; d++) {
+                this.drawDebrisPiece(chassis.debris[d], toX, toY, scale);
+            }
+        }
 
-        // Draw wheels first (behind axles)
-        if (body.wheels) {
-            body.wheels.forEach(function(wheel) {
+        if (chassis.wheels) {
+            chassis.wheels.forEach(function(wheel) {
                 if (!wheel) return;
                 var wPos = wheel.body.getPosition();
                 var wAngle = wheel.body.getAngle();
@@ -257,16 +257,15 @@ var Renderer = (function () {
             });
         }
 
-        // Draw dynamic axles on top — per-axle color
-        if (body.axles) {
-            body.axles.forEach(function(axle, idx) {
+        if (chassis.axles) {
+            chassis.axles.forEach(function(axle, idx) {
                 if (!axle) return;
                 var aPos = axle.getPosition();
                 var aAngle = axle.getAngle();
                 var ax = toX(aPos.x);
                 var ay = toY(aPos.y);
 
-                var axleColor = body.axleColors && body.axleColors[idx] ? body.axleColors[idx] : 'rgb(128,128,128)';
+                var axleColor = chassis.axleColors && chassis.axleColors[idx] ? chassis.axleColors[idx] : 'rgb(128,128,128)';
 
                 ctx.save();
                 ctx.translate(ax, ay);
@@ -295,54 +294,48 @@ var Renderer = (function () {
             });
         }
 
+        var pos = chassis.getPosition();
+        var angle = chassis.getAngle();
+        var sx = toX(pos.x);
+        var sy = toY(pos.y);
+
         ctx.save();
         ctx.translate(sx, sy);
         ctx.rotate(-angle);
 
         ctx.lineWidth = 1.5;
 
-        var verts = body.vertices;
-        var segColors = body.colors;
+        var verts = chassis.vertices;
+        var segColors = chassis.colors;
         var NUM = segColors ? segColors.length : 8;
 
-        // Stroke internal spokes — colored like the segment they lead to
         var centerX = verts[0][0] * scale;
         var centerY = -verts[0][1] * scale;
-        for (var k = 1; k < verts.length; k++) {
-            var spokeCol = segColors[k - 1] || 'rgb(128,128,128)';
-            ctx.beginPath();
-            ctx.moveTo(centerX, centerY);
-            ctx.lineTo(verts[k][0] * scale, -verts[k][1] * scale);
-            ctx.strokeStyle = spokeCol;
-            ctx.stroke();
-        }
 
-        // Draw each triangle segment with its own color
         for (var i = 0; i < NUM; i++) {
-            var v0 = verts[0];
-            var v1 = verts[i + 1];
-            var v2 = verts[(i + 2) > NUM ? 1 : i + 2];
+            if (!chassis.segFixtures || chassis.segFixtures[i]) {
+                var v1 = verts[i + 1];
+                var v2 = verts[(i + 2) > NUM ? 1 : i + 2];
+                var col = segColors[i] || 'rgb(128,128,128)';
 
-            var col = segColors[i] || 'rgb(128,128,128)';
-
-            ctx.beginPath();
-            ctx.moveTo(v0[0] * scale, -v0[1] * scale);
-            ctx.lineTo(v1[0] * scale, -v1[1] * scale);
-            ctx.lineTo(v2[0] * scale, -v2[1] * scale);
-            ctx.closePath();
-            ctx.fillStyle = col.replace('rgb', 'rgba').replace(')', ',0.6)');
-            ctx.fill();
-            ctx.strokeStyle = col;
-            ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(v1[0] * scale, -v1[1] * scale);
+                ctx.lineTo(v2[0] * scale, -v2[1] * scale);
+                ctx.closePath();
+                ctx.fillStyle = col.replace('rgb', 'rgba').replace(')', ',0.6)');
+                ctx.fill();
+                ctx.strokeStyle = col;
+                ctx.stroke();
+            }
         }
 
-        // Draw suspension mounts — color of the axle they belong to
-        var mountFix = body.getFixtureList();
+        var mountFix = chassis.getFixtureList();
         while (mountFix) {
             var mShape = mountFix.getShape();
             if (mShape.m_vertices && mShape.m_vertices.length === 4) {
                 var wIdx = mountFix.wheelIndex;
-                var mountCol = body.axleColors && body.axleColors[wIdx] ? body.axleColors[wIdx] : 'rgb(128,128,128)';
+                var mountCol = chassis.axleColors && chassis.axleColors[wIdx] ? chassis.axleColors[wIdx] : 'rgb(128,128,128)';
 
                 ctx.beginPath();
                 ctx.moveTo(mShape.m_vertices[0].x * scale, -mShape.m_vertices[0].y * scale);
@@ -356,6 +349,42 @@ var Renderer = (function () {
                 ctx.stroke();
             }
             mountFix = mountFix.getNext();
+        }
+
+        ctx.restore();
+    };
+
+    Renderer.prototype.drawDebrisPiece = function (debris, toX, toY, scale) {
+        var ctx = this.ctx;
+        var body = debris.body;
+        var color = debris.color;
+        var pos = body.getPosition();
+        var angle = body.getAngle();
+        var sx = toX(pos.x);
+        var sy = toY(pos.y);
+
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(-angle);
+        ctx.lineWidth = 1.5;
+
+        var fix = body.getFixtureList();
+        while (fix) {
+            var shape = fix.getShape();
+            if (shape.m_vertices) {
+                var verts = shape.m_vertices;
+                ctx.beginPath();
+                ctx.moveTo(verts[0].x * scale, -verts[0].y * scale);
+                for (var v = 1; v < verts.length; v++) {
+                    ctx.lineTo(verts[v].x * scale, -verts[v].y * scale);
+                }
+                ctx.closePath();
+                ctx.fillStyle = color.replace('rgb', 'rgba').replace(')', ',0.6)');
+                ctx.fill();
+                ctx.strokeStyle = color;
+                ctx.stroke();
+            }
+            fix = fix.getNext();
         }
 
         ctx.restore();

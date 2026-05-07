@@ -148,6 +148,21 @@ var World = (function () {
         return trackBody;
     }
 
+    function cloneShape(fixture) {
+        const shape = fixture.getShape();
+        if (shape.m_vertices) {
+            const verts = shape.m_vertices;
+            const cloned = [];
+            for (let i = 0; i < verts.length; i++) {
+                cloned.push(planck.Vec2(verts[i].x, verts[i].y));
+            }
+            return new planck.PolygonShape(cloned);
+        } else if (shape.m_radius !== undefined) {
+            return new planck.CircleShape(shape.m_radius);
+        }
+        return null;
+    }
+
     function createCar(worldInstance, chromo) {
         const { decoded, vertices, segColors, axleColors } = computeCarData(chromo);
 
@@ -158,6 +173,8 @@ var World = (function () {
             bullet: true
         });
 
+        const segFixtures = [];
+        const segShapes = [];
         for (let i = 0; i < NUM_SEGMENTS; i++) {
             const ni = (i + 1) % NUM_SEGMENTS;
             const p1x = vertices[i + 1][0];
@@ -165,10 +182,13 @@ var World = (function () {
             const p2x = vertices[ni + 1][0];
             const p2y = vertices[ni + 1][1];
 
-            chassis.createFixture(
+            const fixture = chassis.createFixture(
                 new planck.PolygonShape([planck.Vec2(0, 0), planck.Vec2(p1x, p1y), planck.Vec2(p2x, p2y)]),
                 { density: 2, friction: 10, restitution: 0.05, ...CAR_FILTER }
             );
+            fixture.segmentIndex = i;
+            segFixtures.push(fixture);
+            segShapes.push([planck.Vec2(0, 0), planck.Vec2(p1x, p1y), planck.Vec2(p2x, p2y)]);
         }
 
         chassis.axles = [];
@@ -180,8 +200,13 @@ var World = (function () {
         chassis.axleShapeSlots = [];
         chassis.colors = segColors;
         chassis.axleColors = axleColors;
-        chassis._brokenPartsActive = false;
         chassis.vertices = vertices;
+        chassis.debris = [];
+        chassis.brokeNum = 0;
+        chassis.segmentBreakFlags = new Array(NUM_SEGMENTS).fill(false);
+        chassis.wheelOnSegment = [];
+        chassis.segFixtures = segFixtures;
+        chassis.segShapes = segShapes;
 
         for (let i = 0; i < decoded.wheelOn.length; i++) {
             const segIdx = decoded.wheelOn[i];
@@ -193,6 +218,7 @@ var World = (function () {
                 chassis.springs.push(null);
                 chassis.wheels.push(null);
                 chassis.axleShapeSlots.push(null);
+                chassis.wheelOnSegment.push(-1);
                 continue;
             }
 
@@ -210,6 +236,7 @@ var World = (function () {
             chassis.mountFixtures.push(mountFixture);
             chassis.axleBreakFlags.push(false);
             chassis.wheelActive.push(true);
+            chassis.wheelOnSegment.push(segIdx);
 
             const worldAnchor = chassis.getWorldPoint(planck.Vec2(px, py));
             const axleBody = worldInstance.createBody({
@@ -312,94 +339,136 @@ var World = (function () {
         this.torque = calcTorque(this.chassis);
     };
 
+    function getFixtureMass(fixture) {
+        const md = { mass: 0, center: planck.Vec2(0, 0), I: 0 };
+        fixture.getMassData(md);
+        return md.mass;
+    }
+
     World.prototype.onPostSolve = function(contact, impulse) {
         for (let fb = 0; fb < 2; fb++) {
             const fixture = fb === 0 ? contact.getFixtureA() : contact.getFixtureB();
-            const wheelIdx = fixture.axleMount || fixture.axleBodyFixture ? fixture.wheelIndex : -1;
-            if (wheelIdx === -1) continue;
-
             const maxImpulse = Math.max(...impulse.normalImpulses);
 
-            const density = fixture.m_density;
-            const shape = fixture.m_shape;
-            let area;
-            if (shape.m_radius) {
-                area = Math.PI * shape.m_radius * shape.m_radius;
-            } else if (shape.m_vertices) {
-                const verts = shape.m_vertices;
-                area = 0;
-                for (let j = 0; j < verts.length; j++) {
-                    const j2 = (j + 1) % verts.length;
-                    area += verts[j].x * verts[j2].y - verts[j2].x * verts[j].y;
+            const segIdx = fixture.segmentIndex;
+            if (segIdx !== undefined && segIdx !== null) {
+                if (this.chassis.segFixtures[segIdx]) {
+                    const mass = getFixtureMass(fixture);
+                    const strength = BREAK_STRENGTH * mass;
+                    if (strength < maxImpulse) {
+                        this.chassis.segmentBreakFlags[segIdx] = true;
+                        return;
+                    }
                 }
-                area = Math.abs(area) / 2;
-            } else {
-                area = 1;
             }
 
-            const mass = density * area;
-            const strength = BREAK_STRENGTH * mass;
-            if (strength < maxImpulse) {
-                this.chassis.axleBreakFlags[wheelIdx] = true;
-                return;
+            const wheelIdx = fixture.axleMount || fixture.axleBodyFixture ? fixture.wheelIndex : -1;
+            if (wheelIdx !== -1) {
+                const mass = getFixtureMass(fixture);
+                const strength = BREAK_STRENGTH * mass;
+                if (strength < maxImpulse) {
+                    this.chassis.axleBreakFlags[wheelIdx] = true;
+                    return;
+                }
             }
         }
     };
 
+    World.prototype.destroyWheel = function (i) {
+        const chassis = this.chassis;
+        const spring = chassis.springs[i];
+        if (spring) {
+            this.world.destroyJoint(spring);
+            chassis.springs[i] = null;
+        }
+
+        const mountFixture = chassis.mountFixtures[i];
+        if (mountFixture) {
+            chassis.destroyFixture(mountFixture);
+            chassis.mountFixtures[i] = null;
+        }
+
+        const slot = chassis.axleShapeSlots[i];
+        if (slot) {
+            slot.body.destroyFixture(slot.fixture);
+            slot.body.createFixture(
+                new planck.BoxShape(AXLE_BOX_HW, AXLE_BOX_HH, AXLE_BOX_OFFSET, 0),
+                { density: 20, friction: 10, restitution: 0.05,
+                  filterCategoryBits: CAR_FILTER.filterCategoryBits, filterMaskBits: BROKEN_MASK }
+            );
+            slot.body.createFixture(
+                new planck.BoxShape(MOUNT_BOX_HW, MOUNT_BOX_HH, planck.Vec2(0, 0), 0),
+                { density: 2, friction: 10, restitution: 0.05,
+                  filterCategoryBits: CAR_FILTER.filterCategoryBits, filterMaskBits: BROKEN_MASK }
+            );
+        }
+
+        const wheel = chassis.wheels[i];
+        if (wheel) {
+            wheel.joint.setMotorSpeed(0);
+            wheel.joint.setMaxMotorTorque(0);
+        }
+
+        chassis.wheelActive[i] = false;
+    };
+
+    World.prototype.recalcTorque = function () {
+        const activeWheels = this.chassis.wheelActive.filter(a => a).length;
+        this.torque = this.chassis.getMass() * MASS_MULT / Math.pow(2, Math.max(activeWheels - 1, 0));
+    };
+
+    World.prototype.breakSegment = function (i) {
+        const chassis = this.chassis;
+        const fixture = chassis.segFixtures[i];
+        if (!fixture) return;
+
+        chassis.brokeNum++;
+
+        const shape = cloneShape(fixture);
+        const pos = chassis.getPosition();
+        const angle = chassis.getAngle();
+        const vel = chassis.getLinearVelocity();
+
+        chassis.destroyFixture(fixture);
+        chassis.segFixtures[i] = null;
+
+        const debrisBody = this.world.createBody({
+            type: 'dynamic',
+            position: pos,
+            angle: angle,
+            allowSleep: false
+        });
+        debrisBody.createFixture(shape, { density: 2, friction: 10, restitution: 0.05, ...CAR_FILTER });
+        debrisBody.setLinearVelocity(vel);
+
+        chassis.debris.push({ body: debrisBody, color: chassis.colors[i] });
+
+        for (let w = 0; w < chassis.wheelOnSegment.length; w++) {
+            if (chassis.wheelOnSegment[w] === i && chassis.wheelActive[w]) {
+                this.destroyWheel(w);
+            }
+        }
+
+        this.recalcTorque();
+    };
+
     World.prototype.processBreakage = function () {
         const chassis = this.chassis;
-        if (!chassis._brokenPartsActive) {
-            chassis._brokenPartsActive = true;
-            let fixture = chassis.getFixtureList();
-            while (fixture) {
-                fixture.setFilterMaskBits(BROKEN_MASK);
-                fixture.refilter();
-                fixture = fixture.getNext();
-            }
+
+        for (let i = 0; i < NUM_SEGMENTS; i++) {
+            if (!chassis.segmentBreakFlags[i]) continue;
+            chassis.segmentBreakFlags[i] = false;
+            if (!chassis.segFixtures[i]) continue;
+            if (chassis.brokeNum >= 7) continue;
+            this.breakSegment(i);
         }
 
         for (let i = 0; i < chassis.axleBreakFlags.length; i++) {
             if (!chassis.axleBreakFlags[i]) continue;
             chassis.axleBreakFlags[i] = false;
             if (!chassis.wheelActive[i]) continue;
-
-            const spring = chassis.springs[i];
-            if (spring) {
-                this.world.destroyJoint(spring);
-                chassis.springs[i] = null;
-            }
-
-            const mountFixture = chassis.mountFixtures[i];
-            if (mountFixture) {
-                chassis.destroyFixture(mountFixture);
-                chassis.mountFixtures[i] = null;
-            }
-
-            const slot = chassis.axleShapeSlots[i];
-            if (slot) {
-                slot.body.destroyFixture(slot.fixture);
-
-                slot.body.createFixture(
-                    new planck.BoxShape(AXLE_BOX_HW, AXLE_BOX_HH, AXLE_BOX_OFFSET, 0),
-                    { density: 20, friction: 10, restitution: 0.05,
-                      filterCategoryBits: CAR_FILTER.filterCategoryBits, filterMaskBits: BROKEN_MASK }
-                );
-
-                slot.body.createFixture(
-                    new planck.BoxShape(MOUNT_BOX_HW, MOUNT_BOX_HH, planck.Vec2(0, 0), 0),
-                    { density: 2, friction: 10, restitution: 0.05,
-                      filterCategoryBits: CAR_FILTER.filterCategoryBits, filterMaskBits: BROKEN_MASK }
-                );
-            }
-
-            const wheel = chassis.wheels[i];
-            if (wheel) {
-                wheel.joint.setMotorSpeed(0);
-                wheel.joint.setMaxMotorTorque(0);
-            }
-
-            chassis.wheelActive[i] = false;
-            this.torque = chassis.getMass() * MASS_MULT / Math.pow(2, Math.max(chassis.wheelActive.filter(a => a).length - 1, 0));
+            this.destroyWheel(i);
+            this.recalcTorque();
         }
     };
 
@@ -443,7 +512,8 @@ var World = (function () {
         this.stopped = this.slow >= maxSlow
             || dist >= this.TRACK_LENGTH
             || this.iteration > this.MAX_ITERATION
-            || dist < BACKWARD_DIST;
+            || dist < BACKWARD_DIST
+            || this.chassis.brokeNum >= 7;
     };
 
     World.prototype.getChassisPos = function () {
