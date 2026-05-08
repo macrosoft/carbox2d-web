@@ -5,11 +5,14 @@ var HUD = (function () {
     var _torqueEl = null;
     var _speedEl = null;
     var _tableBody = null;
+    var _tableContainer = null;
     var _genEl = null;
     var _pauseEl = null;
     var _graphCanvas = null;
     var _graphCtx = null;
     var _runs = [];
+    var _copyCallback = null;
+    var _copyTimers = {};
 
     var _maxRuns = 32;
 
@@ -23,7 +26,7 @@ var HUD = (function () {
         _container.innerHTML =
             '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:32px;color:blue;text-shadow:1px 1px 2px rgba(0,0,0,0.5);display:none;" id="hudPause">[PAUSE]</div>' +
 
-            '<div style="position:absolute;top:18px;left:5px;background:rgba(255,255,200,0.75);padding:4px 8px;">' +
+            '<div id="hudTableContainer" style="position:absolute;top:18px;left:5px;background:rgba(255,255,200,0.75);padding:4px 8px;pointer-events:auto;">' +
             '<div style="font-size:12px;color:black;margin-bottom:2px;">' +
             '<span style="display:inline-block;width:20px;text-align:left;">#</span>' +
             '<span style="display:inline-block;width:48px;text-align:right;">Score</span>' +
@@ -51,6 +54,7 @@ var HUD = (function () {
         _torqueEl = document.getElementById('hudTorque');
         _speedEl = document.getElementById('hudSpeed');
         _tableBody = document.getElementById('hudTableBody');
+        _tableContainer = document.getElementById('hudTableContainer');
         _genEl = document.getElementById('hudGen');
         _graphCanvas = document.getElementById('hudGraph');
         if (_graphCanvas) {
@@ -96,10 +100,48 @@ var HUD = (function () {
             row.style.borderTop = '1px solid rgba(0,0,0,0.15)';
             row.style.paddingTop = '1px';
             row.style.color = 'black';
+            row.style.cursor = 'pointer';
+            row.style.position = 'relative';
             row.innerHTML =
                 '<span style="display:inline-block;width:20px;text-align:left;padding-left:2px;">' + (i + 1) + '</span>' +
                 '<span style="display:inline-block;width:48px;text-align:right;">' + _runs[i].score.toFixed(1) + '</span>' +
-                '<span style="display:inline-block;width:50px;text-align:right;">' + formatTime(_runs[i].time) + '</span>';
+                '<span style="display:inline-block;width:50px;text-align:right;">' + formatTime(_runs[i].time) + '</span>' +
+                '<span class="copyIcon" style="position:absolute;left:125px;top:0;opacity:0;font-size:11px;color:#555;white-space:nowrap;">📋</span>';
+
+            (function(rowIdx, rowEl) {
+                rowEl.addEventListener('mouseenter', function() {
+                    rowEl.style.background = 'rgba(255,255,220,0.9)';
+                    var icon = rowEl.querySelector('.copyIcon');
+                    if (icon) icon.style.opacity = '1';
+                });
+                rowEl.addEventListener('mouseleave', function() {
+                    rowEl.style.background = '';
+                    var icon = rowEl.querySelector('.copyIcon');
+                    if (icon) icon.style.opacity = '0';
+                });
+                rowEl.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (_copyCallback) {
+                        var chromo = _copyCallback(rowIdx);
+                        if (chromo) {
+                            navigator.clipboard.writeText(Chromosome.serialize(chromo)).then(function() {
+                                var icon = rowEl.querySelector('.copyIcon');
+                                if (icon) {
+                                    icon.textContent = '✓';
+                                    icon.style.opacity = '1';
+                                    icon.style.color = '#2a2';
+                                    clearTimeout(_copyTimers[rowIdx]);
+                                    _copyTimers[rowIdx] = setTimeout(function() {
+                                        icon.textContent = '📋';
+                                        icon.style.color = '#555';
+                                    }, 1500);
+                                }
+                            });
+                        }
+                    }
+                });
+            })(i, row);
+
             _tableBody.appendChild(row);
         }
     }
@@ -112,26 +154,30 @@ var HUD = (function () {
     function setPause(paused) {
         if (_pauseEl) _pauseEl.style.display = paused ? 'block' : 'none';
     }
- 
+
+    function setCopyCallback(fn) {
+        _copyCallback = fn;
+    }
+
     function drawGraphs(avgScores, maxScores) {
         if (!_graphCtx) return;
         var ctx = _graphCtx;
         var w = _graphCanvas.width;
         var h = _graphCanvas.height;
- 
+
         ctx.clearRect(0, 0, w, h);
- 
+
         if (avgScores.length < 2) return;
- 
+
         var maxVal = 0;
         for (var i = 0; i < maxScores.length; i++) {
             if (maxScores[i] > maxVal) maxVal = maxScores[i];
         }
         if (maxVal === 0) maxVal = 1;
- 
+
         var stepX = w / Math.max(1, avgScores.length - 1);
         ctx.lineWidth = 2;
- 
+
         function drawLine(data, color) {
             ctx.beginPath();
             ctx.strokeStyle = color;
@@ -143,11 +189,11 @@ var HUD = (function () {
             }
             ctx.stroke();
         }
- 
+
         drawLine(avgScores, 'black');
         drawLine(maxScores, 'red');
     }
- 
-    return { init: init, update: update, saveRun: saveRun, resetRuns: resetRuns, updateGeneration: updateGeneration, setPause: setPause, drawGraphs: drawGraphs };
+
+    return { init: init, update: update, saveRun: saveRun, resetRuns: resetRuns, updateGeneration: updateGeneration, setPause: setPause, drawGraphs: drawGraphs, setCopyCallback: setCopyCallback };
 
 })();

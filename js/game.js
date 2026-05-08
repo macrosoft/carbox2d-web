@@ -17,6 +17,7 @@
 
     var POPULATION_SIZE = 32;
     var _population = [];
+    var _prevPopulation = [];
     var _results = [];
     var _carIndex = 0;
     var _generation = 0;
@@ -103,9 +104,17 @@
         var stats = calcStats(_results);
         _avgScores.push(stats.avg);
         _maxScores.push(stats.max);
+        _prevPopulation = _population.slice();
         _generation++;
         startGeneration(_population, _results);
     }
+
+    HUD.setCopyCallback(function(index) {
+        if (_carIndex === 0 && _results.length === 0 && _prevPopulation.length > 0) {
+            return _prevPopulation[index];
+        }
+        return _population[index];
+    });
 
     TrackLoader.load().then(function (track) {
         World.load(track);

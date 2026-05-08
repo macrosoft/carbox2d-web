@@ -105,5 +105,60 @@ var Chromosome = (function () {
         return { genes: genes, colors: colors };
     }
 
-    return { generate: generate, crossover: crossover, clone: clone };
+    function encodeFloat32(arr) {
+        var bytes = new Uint8Array(arr.buffer);
+        var binary = '';
+        for (var i = 0; i < bytes.length; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+    }
+
+    function decodeFloat32(base64, target) {
+        var binary = atob(base64);
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        target.set(new Float32Array(bytes.buffer));
+    }
+
+    function encodeColors(colors) {
+        var out = [];
+        for (var i = 0; i < colors.length; i++) {
+            var r = colors[i][0].toString(16).padStart(2, '0');
+            var g = colors[i][1].toString(16).padStart(2, '0');
+            var b = colors[i][2].toString(16).padStart(2, '0');
+            out.push(r + g + b);
+        }
+        return out.join('');
+    }
+
+    function decodeColors(str) {
+        var out = [];
+        for (var i = 0; i < 16; i++) {
+            var hex = str.substring(i * 6, i * 6 + 6);
+            var r = parseInt(hex.substring(0, 2), 16);
+            var g = parseInt(hex.substring(2, 4), 16);
+            var b = parseInt(hex.substring(4, 6), 16);
+            out.push([r, g, b]);
+        }
+        return out;
+    }
+
+    function serialize(chromo) {
+        return JSON.stringify({
+            g: encodeFloat32(chromo.genes),
+            c: encodeColors(chromo.colors)
+        });
+    }
+
+    function deserialize(str) {
+        var data = JSON.parse(str);
+        var genes = new Float32Array(40);
+        decodeFloat32(data.g, genes);
+        return { genes: genes, colors: decodeColors(data.c) };
+    }
+
+    return { generate: generate, crossover: crossover, clone: clone, serialize: serialize, deserialize: deserialize };
 })();
