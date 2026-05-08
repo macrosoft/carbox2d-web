@@ -10,8 +10,8 @@ var World = (function () {
     const WHEEL_PROB0 = 0.5;
     const MIN_WHEEL = 0.1;
     const MAX_WHEEL = 1.5;
-    const START_POS = planck.Vec2(-500, 5);
-    const SIM_START_POS = planck.Vec2(-500, 4);
+    const START_POS_X = -500;
+    const DROP_CLEARANCE = 2.0;
     const MOTOR_SPEED = -6 * Math.PI;
     const MAX_MOTOR_TORQUE = 100;
     const SPRING_K = 7.5;
@@ -75,6 +75,25 @@ var World = (function () {
         }
 
         return { angles, mags, wheelOn, axleAngles, wheelRadii };
+    }
+
+    function computeDropY(chromo) {
+        const { vertices, wheels } = computeCarData(chromo);
+        let minLocalY = 0;
+        for (let i = 1; i < vertices.length; i++) {
+            if (vertices[i][1] < minLocalY) {
+                minLocalY = vertices[i][1];
+            }
+        }
+        for (let i = 0; i < wheels.length; i++) {
+            if (wheels[i]) {
+                const wheelBottom = wheels[i].pos.y - wheels[i].radius;
+                if (wheelBottom < minLocalY) {
+                    minLocalY = wheelBottom;
+                }
+            }
+        }
+        return TRACK_THICK + DROP_CLEARANCE - minLocalY;
     }
 
     function makeRgbStrings(colors, startIdx, count) {
@@ -168,7 +187,7 @@ var World = (function () {
 
         const chassis = worldInstance.createBody({
             type: 'dynamic',
-            position: START_POS,
+            position: planck.Vec2(START_POS_X, computeDropY(chromo)),
             allowSleep: false,
             bullet: true
         });
@@ -314,7 +333,7 @@ var World = (function () {
         this.chromo = chromo;
         initPhysics(this);
         this.chassis = createCar(this.world, chromo);
-        this.startPos = SIM_START_POS;
+        this.startPos = planck.Vec2(START_POS_X, computeDropY(chromo));
 
         this.iteration = 0;
         this.maxPosition = 0;
@@ -331,6 +350,7 @@ var World = (function () {
         if (newChromo) this.chromo = newChromo;
         initPhysics(this);
         this.chassis = createCar(this.world, this.chromo);
+        this.startPos = planck.Vec2(START_POS_X, computeDropY(this.chromo));
         this.iteration = 0;
         this.maxPosition = 0;
         this.slow = 0;
