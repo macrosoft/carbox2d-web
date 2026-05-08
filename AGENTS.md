@@ -3,7 +3,7 @@
 - All JS files use IIFE + revealing module pattern (`var Module = (function(){ ... })();`) — no bundler, no ES modules.
 - Strict mode: `'use strict'` at the top of each IIFE.
 - Named constants extracted at module scope (no magic numbers).
-- Script loading order: planck.min.js → config.js → track_loader.js → chromosome.js → world.js → hud.js → renderer.js → game.js.
+- Script loading order: planck.min.js → config.js → track_loader.js → chromosome.js → car_builder.js → world.js → hud.js → renderer.js → game.js.
 
 ## Physics (Planck.js)
 - Use `planck.js` (no `b2` prefix). Methods are `lowerCamelCase`.
@@ -11,20 +11,28 @@
 - Use plain JS objects for definitions instead of `BodyDef`.
 - Shapes are immutable.
 
+## CarBuilder (js/car_builder.js)
+### Module Exports
+- `decodeChromosome(genes)` → `{ angles, mags, wheelOn, axleAngles, wheelRadii }` (pure function).
+- `computeCarData(chromo)` → `{ decoded, vertices, segColors, axleColors, wheels }` (pure function).
+- `getCarGeometry(chromo)` → `{ vertices, colors, axleColors, wheels }` for rendering.
+
+**All functions are pure** — no side effects, no physics dependencies. Re-exported via `World.getCarGeometry` for backwards compatibility.
+
 ## World Architecture (js/world.js)
 ### Module Exports
 - `load(track)` — load track data.
 - `World` — constructor function (IIFE-style).
 - `reset(chromo)` — factory: `new World(chromo)`.
-- `getCarGeometry(chromo)` — returns geometry for rendering.
+- `getCarGeometry(chromo)` — re-exported from CarBuilder.
 
 ### Geometry Pipeline (single source of truth)
-1. `decodeChromosome(genes)` → `{ angles, mags, wheelOn, axleAngles, wheelRadii }`
-2. `computeCarData(chromo)` → calls decode + computes vertices, colors, wheels.
-3. `getCarGeometry(chromo)` → returns `{ vertices, colors, axleColors, wheels }` for rendering.
-4. `createCar(world, chromo)` → uses `computeCarData()` for building physics bodies.
+1. `CarBuilder.decodeChromosome(genes)` → `{ angles, mags, wheelOn, axleAngles, wheelRadii }`
+2. `CarBuilder.computeCarData(chromo)` → calls decode + computes vertices, colors, wheels.
+3. `CarBuilder.getCarGeometry(chromo)` → returns `{ vertices, colors, axleColors, wheels }` for rendering.
+4. `createCar(world, chromo)` → uses `CarBuilder.computeCarData()` for building physics bodies.
 
-**Never** duplicate vertex/color computation — always go through `computeCarData()`.
+**Never** duplicate vertex/color computation — always go through `CarBuilder.computeCarData()`.
 
 ### Torque Calculation
 - `calcTorque(chassis)` → single function: `chassis.getMass() * MASS_MULT / Math.pow(2, Math.max(wheelCount - 1, 0))`.
