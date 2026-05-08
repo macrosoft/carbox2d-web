@@ -105,25 +105,26 @@ var Renderer = (function () {
             });
         }
 
-        // Chassis
-        var verts = geometry.vertices;
-        var segColors = geometry.colors;
-        var NUM = segColors ? segColors.length : 8;
+        // Chassis fills
+        var vVerts = geometry.vertices;
+        var vSegColors = geometry.colors;
+        var vNUM = vSegColors ? vSegColors.length : 8;
         ctx.lineWidth = 1;
+        ctx.lineJoin = 'round';
 
-        for (var i = 0; i < NUM; i++) {
-            var v0 = verts[0];
-            var v1 = verts[i + 1];
-            var v2 = verts[(i + 2) > NUM ? 1 : i + 2];
-            var col = segColors[i] || 'rgb(128,128,128)';
+        for (var i = 0; i < vNUM; i++) {
+            var vv0 = vVerts[0];
+            var vv1 = vVerts[i + 1];
+            var vv2 = vVerts[(i + 2) > vNUM ? 1 : i + 2];
+            var vCol = vSegColors[i] || 'rgb(128,128,128)';
             ctx.beginPath();
-            ctx.moveTo(v0[0] * scale, -v0[1] * scale);
-            ctx.lineTo(v1[0] * scale, -v1[1] * scale);
-            ctx.lineTo(v2[0] * scale, -v2[1] * scale);
+            ctx.moveTo(vv0[0] * scale, -vv0[1] * scale);
+            ctx.lineTo(vv1[0] * scale, -vv1[1] * scale);
+            ctx.lineTo(vv2[0] * scale, -vv2[1] * scale);
             ctx.closePath();
-            ctx.fillStyle = col.replace('rgb', 'rgba').replace(')', ',0.6)');
+            ctx.fillStyle = vCol.replace('rgb', 'rgba').replace(')', ',0.6)');
             ctx.fill();
-            ctx.strokeStyle = col;
+            ctx.strokeStyle = vCol;
             ctx.stroke();
         }
 
@@ -312,6 +313,9 @@ var Renderer = (function () {
         var centerX = verts[0][0] * scale;
         var centerY = -verts[0][1] * scale;
 
+        ctx.lineJoin = 'round';
+
+        // Fills
         for (var i = 0; i < NUM; i++) {
             if (!chassis.segFixtures || chassis.segFixtures[i]) {
                 var v1 = verts[i + 1];
