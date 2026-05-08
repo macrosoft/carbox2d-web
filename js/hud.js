@@ -146,6 +146,45 @@ var HUD = (function () {
         }
     }
 
+    function showResults(indexed) {
+        _tableBody.innerHTML = '';
+        var styleId = 'hudHighlightStyle';
+        if (!document.getElementById(styleId)) {
+            var styleEl = document.createElement('style');
+            styleEl.id = styleId;
+            styleEl.textContent =
+                '.hudRowWinner{color:green!important;}' +
+                '.hudRowLoser{color:red!important;}';
+            document.head.appendChild(styleEl);
+        }
+
+        for (var i = 0; i < indexed.length; i++) {
+            var item = indexed[i];
+            var row = document.createElement('div');
+            row.style.fontSize = '12px';
+            row.style.marginTop = '1px';
+            row.style.borderTop = '1px solid rgba(0,0,0,0.15)';
+            row.style.paddingTop = '1px';
+            row.style.position = 'relative';
+            row.style.cursor = 'default';
+
+            if (i === 0) {
+                row.className = 'hudRowWinner';
+            } else if (!item.hasOffspring) {
+                row.className = 'hudRowLoser';
+            } else {
+                row.style.color = 'black';
+            }
+
+            row.innerHTML =
+                '<span style="display:inline-block;width:20px;text-align:left;padding-left:2px;">' + (i + 1) + '</span>' +
+                '<span style="display:inline-block;width:48px;text-align:right;">' + item.score.toFixed(1) + '</span>' +
+                '<span style="display:inline-block;width:50px;text-align:right;">' + formatTime(item.time) + '</span>';
+
+            _tableBody.appendChild(row);
+        }
+    }
+
     function resetRuns() {
         _runs = [];
         if (_tableBody) _tableBody.innerHTML = '';
@@ -194,6 +233,6 @@ var HUD = (function () {
         drawLine(maxScores, 'red');
     }
 
-    return { init: init, update: update, saveRun: saveRun, resetRuns: resetRuns, updateGeneration: updateGeneration, setPause: setPause, drawGraphs: drawGraphs, setCopyCallback: setCopyCallback };
+    return { init: init, update: update, saveRun: saveRun, resetRuns: resetRuns, showResults: showResults, updateGeneration: updateGeneration, setPause: setPause, drawGraphs: drawGraphs, setCopyCallback: setCopyCallback };
 
 })();

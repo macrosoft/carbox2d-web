@@ -17,12 +17,12 @@
 
     var POPULATION_SIZE = 32;
     var _population = [];
-    var _prevPopulation = [];
     var _results = [];
     var _carIndex = 0;
     var _generation = 0;
     var _avgScores = [0];
     var _maxScores = [0];
+    var _prevIndexed = [];
 
     function shuffle(arr) {
         for (var q = arr.length - 1; q > 0; q--) {
@@ -45,15 +45,13 @@
     }
 
     function handleCarFinished(world, carIndex) {
-        if (_generation > 0 && carIndex === 0) {
-            HUD.resetRuns();
-        }
         HUD.saveRun(carIndex, world.getScore(), world.getTime());
         _results.push({ score: world.getScore(), time: world.getTime() });
     }
 
     function startGeneration(prevPopulation, prevResults) {
         _population = [];
+        _prevIndexed = [];
 
         if (_generation === 0) {
             for (var i = 0; i < POPULATION_SIZE; i++) {
@@ -71,6 +69,28 @@
                 return a.time - b.time;
             });
 
+            var parentSet = new Set();
+            parentSet.add(0);
+
+            var indices = [];
+            for (var p = 0; p < POPULATION_SIZE; p++) {
+                indices.push(p);
+            }
+            shuffle(indices);
+
+            for (var pair = 0; pair < 14; pair++) {
+                var idxA = indices[pair * 2];
+                var idxB = indices[pair * 2 + 1];
+                parentSet.add(idxA);
+                parentSet.add(idxB);
+            }
+
+            for (var m = 0; m < indexed.length; m++) {
+                indexed[m].hasOffspring = parentSet.has(m);
+            }
+
+            _prevIndexed = indexed;
+
             _population.push(Chromosome.clone(indexed[0].chromo));
             _population[_population.length - 1].parents = [indexed[0].chromo];
 
@@ -79,12 +99,6 @@
                 chromo.parents = null;
                 _population.push(chromo);
             }
-
-            var indices = [];
-            for (var p = 0; p < POPULATION_SIZE; p++) {
-                indices.push(p);
-            }
-            shuffle(indices);
 
             for (var pair = 0; pair < 14; pair++) {
                 var pa = indexed[indices[pair * 2]].chromo;
@@ -104,14 +118,13 @@
         var stats = calcStats(_results);
         _avgScores.push(stats.avg);
         _maxScores.push(stats.max);
-        _prevPopulation = _population.slice();
         _generation++;
         startGeneration(_population, _results);
     }
 
     HUD.setCopyCallback(function(index) {
-        if (_carIndex === 0 && _results.length === 0 && _prevPopulation.length > 0) {
-            return _prevPopulation[index];
+        if (_carIndex === 0 && _results.length === 0 && _prevIndexed.length > 0) {
+            return _prevIndexed[index].chromo;
         }
         return _population[index];
     });
@@ -146,6 +159,8 @@
 
                         if (_carIndex >= POPULATION_SIZE) {
                             finishGeneration();
+                            HUD.resetRuns();
+                            HUD.showResults(_prevIndexed);
                         }
 
                         world.reset(_population[_carIndex]);
