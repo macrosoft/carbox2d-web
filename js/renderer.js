@@ -25,6 +25,7 @@ const Renderer = (function () {
         this.targetX = 0;
         this.targetY = 0;
         this.dpr     = window.devicePixelRatio || 1;
+        this.flagPos = null;
         this.resize();
     }
 
@@ -48,6 +49,10 @@ const Renderer = (function () {
     Renderer.prototype.follow = function (x, y) {
         this.targetX = x;
         this.targetY = y + CAMERA_Y_OFFSET;
+    };
+
+    Renderer.prototype.setFlagPos = function (pos) {
+        this.flagPos = pos;
     };
 
     Renderer.prototype.updateCamera = function () {
@@ -182,6 +187,10 @@ const Renderer = (function () {
         for (let i = 0; i < _trackCount; i++) {
             const base = i * 3;
             drawRotRect(ctx, toX, toY, scale, _trackData[base], _trackData[base + 1], _trackData[base + 2], TRACK_HALF_W, TRACK_THICK);
+        }
+
+        if (this.flagPos) {
+            drawFlag(ctx, toX, toY, scale, this.flagPos.x, this.flagPos.y);
         }
 
         if (chassis) {
@@ -426,6 +435,68 @@ const Renderer = (function () {
             ctx.restore();
         }
     };
+
+    function drawFlag(ctx, toX, toY, scale, wx, wy) {
+        let groundY = null;
+        for (let i = 0; i < _trackCount; i++) {
+            const base = i * 3;
+            const cx = _trackData[base];
+            const cy = _trackData[base + 1];
+            const ca = _trackData[base + 2];
+            const cosA = Math.cos(ca);
+            const sinA = Math.sin(ca);
+            const x1 = cx - cosA * TRACK_HALF_W - sinA * TRACK_THICK;
+            const x2 = cx + cosA * TRACK_HALF_W - sinA * TRACK_THICK;
+            if (wx >= Math.min(x1, x2) && wx <= Math.max(x1, x2)) {
+                const lx = Math.abs(cosA) > 1e-8
+                    ? (wx - cx + sinA * TRACK_THICK) / cosA
+                    : 0;
+                const wy2 = cy + sinA * lx + cosA * TRACK_THICK;
+                if (groundY === null || wy2 > groundY) {
+                    groundY = wy2;
+                }
+            }
+        }
+
+        if (groundY === null) {
+            let bestDist = Infinity;
+            for (let i = 0; i < _trackCount; i++) {
+                const base = i * 3;
+                const d = Math.abs(wx - _trackData[base]);
+                if (d < bestDist) {
+                    bestDist = d;
+                    const ca = _trackData[base + 2];
+                    groundY = _trackData[base + 1] + Math.cos(ca) * TRACK_THICK;
+                }
+            }
+        }
+
+        const bx = toX(wx);
+        const by = toY(groundY);
+        const poleH = 0.9 * scale;
+        const topY = by - poleH;
+        const fw = 0.625 * scale;
+        const fh = 0.5 * scale;
+        const notch = fw * 0.3;
+
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(bx - fw, topY);
+        ctx.lineTo(bx - fw + notch, topY + fh / 2);
+        ctx.lineTo(bx - fw, topY + fh);
+        ctx.lineTo(bx, topY + fh);
+        ctx.lineTo(bx, topY);
+        ctx.closePath();
+        ctx.stroke();
+
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.lineTo(bx, topY);
+        ctx.stroke();
+    }
 
     function drawRotRect(ctx, toX, toY, scale, x, y, angle, hw, hh) {
         const sx = toX(x);

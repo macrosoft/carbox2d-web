@@ -247,6 +247,7 @@ const World = (function () {
 
         this.iteration = 0;
         this.maxPosition = 0;
+        this.furthestPos = null;
         this.TRACK_LENGTH = 1500;
         this.MAX_ITERATION = 5 * 60 * 60;
         this.slow = 0;
@@ -265,6 +266,7 @@ const World = (function () {
         this.startPos = planck.Vec2(START_POS_X, computeDropY(this.chromo));
         this.iteration = 0;
         this.maxPosition = 0;
+        this.furthestPos = null;
         this.slow = 0;
         this.prevDist = 0;
         this.stopped = false;
@@ -503,6 +505,7 @@ const World = (function () {
 
         if (dist > this.maxPosition) {
             this.maxPosition = dist;
+            this.furthestPos = { x: pos.x, y: pos.y };
         }
 
         if (dist > this.prevDist + 1) {

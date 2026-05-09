@@ -24,6 +24,8 @@
     let _avgScores = [0];
     let _maxScores = [0];
     let _prevIndexed = [];
+    let _flagPos = null;
+    let _bestDist = 0;
 
     function shuffle(arr) {
         for (let q = arr.length - 1; q > 0; q--) {
@@ -48,6 +50,10 @@
     function handleCarFinished(world, carIndex) {
         HUD.saveRun(carIndex, world.getScore(), world.getTime());
         _results.push({ score: world.getScore(), time: world.getTime() });
+        if (world.furthestPos && world.getScore() > _bestDist) {
+            _bestDist = world.getScore();
+            _flagPos = { x: world.furthestPos.x, y: world.furthestPos.y };
+        }
     }
 
     function startGeneration(prevPopulation, prevResults) {
@@ -113,6 +119,8 @@
         }
         _results = [];
         _carIndex = 0;
+        _flagPos = null;
+        _bestDist = 0;
     }
 
     function finishGeneration() {
@@ -176,6 +184,7 @@
 
             const pos = world.getChassisPos();
             renderer.follow(pos.x, pos.y);
+            renderer.setFlagPos(_flagPos);
             renderer.draw(world.chassis, world.chromo.parents, world.sparks);
             HUD.update(world);
             HUD.updateGeneration(_generation, _carIndex);
