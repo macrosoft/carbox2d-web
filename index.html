@@ -8,14 +8,48 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html, body { width: 100%; height: 100%; overflow: hidden; }
-        body { display: flex; justify-content: center; align-items: center; background: #222; }
+        body { display: flex; justify-content: center; align-items: center; }
         canvas { display: block; }
+
+        :root {
+            --bg-body: #222;
+            --hud-bg: rgba(255,255,200,0.75);
+            --hud-text: #000;
+            --hud-border: rgba(0,0,0,0.15);
+            --hud-row-hover: rgba(255,255,220,0.9);
+            --hud-gen-color: #000;
+            --hud-icon-color: #555;
+            --hud-icon-ok: #2a2;
+            --hud-winner: green;
+            --hud-loser: red;
+            --pause-color: blue;
+        }
+
+        [data-theme="dark"] {
+            --bg-body: #0d0d1a;
+            --hud-bg: rgba(30,30,60,0.85);
+            --hud-text: #ccc;
+            --hud-border: rgba(255,255,255,0.1);
+            --hud-row-hover: rgba(50,50,80,0.9);
+            --hud-gen-color: #ccc;
+            --hud-icon-color: #999;
+            --hud-icon-ok: #4c4;
+            --hud-winner: #4c4;
+            --hud-loser: #f66;
+            --pause-color: #6af;
+        }
+
+        body { background: var(--bg-body); }
+        #themeToggle:hover { opacity:0.8; transform:scale(1.1); }
+        #themeToggle:active { transform:scale(0.95); }
     </style>
 </head>
 <body>
+    <button id="themeToggle" style="position:fixed;top:8px;right:8px;z-index:9999;background:var(--hud-bg);color:red;border:1px solid var(--hud-border);border-radius:0;padding:6px;cursor:pointer;font-size:16px;line-height:1;pointer-events:auto;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;" title="Toggle theme"></button>
     <canvas id="gameCanvas"></canvas>
   <script src="js/planck.min.js"></script>
     <script src="js/config.js"></script>
+    <script src="js/theme.js"></script>
     <script src="js/track_loader.js"></script>
     <script src="js/chromosome.js"></script>
     <script src="js/car_builder.js"></script>

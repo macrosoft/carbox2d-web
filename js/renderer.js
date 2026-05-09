@@ -1,10 +1,30 @@
 const Renderer = (function () {
     'use strict';
 
-    const COLOR_BG         = '#FFFFC8';
-    const COLOR_GRID_MINOR = '#CCCCCC';
-    const COLOR_GRID_MAJOR = '#FF0080';
-    const COLOR_TRACK       = 'rgba(0, 0, 0, 0.5)';
+    function _getColors() {
+        if (Theme.isDark()) {
+            return {
+                bg:         '#1a1a2e',
+                gridMinor:  '#2a2a4a',
+                gridMajor:  '#ff66b2',
+                track:      'rgba(100,100,150,0.6)',
+                line:       '#bbb',
+                stroke:     '#ddd',
+                parentBg:   'rgba(30,30,60,0.8)',
+                parentEdge: '#555'
+            };
+        }
+        return {
+            bg:         '#FFFFC8',
+            gridMinor:  '#CCCCCC',
+            gridMajor:  '#FF0080',
+            track:      'rgba(0, 0, 0, 0.5)',
+            line:       '#1a1a1a',
+            stroke:     '#000',
+            parentBg:   'rgba(255,255,200,0.7)',
+            parentEdge: '#888'
+        };
+    }
 
     const GRID_STEP    = 1;
     const GRID_MAJOR_X = 100;
@@ -81,9 +101,9 @@ const Renderer = (function () {
                 ctx.rotate(-wheel.angle);
                 ctx.beginPath();
                 ctx.arc(0, 0, wr, 0, 2 * Math.PI);
-                ctx.fillStyle = COLOR_TRACK;
+                ctx.fillStyle = _getColors().track;
                 ctx.fill();
-                ctx.strokeStyle = '#000';
+                ctx.strokeStyle = _getColors().stroke;
                 ctx.lineWidth = 1;
                 ctx.stroke();
                 ctx.restore();
@@ -151,7 +171,7 @@ const Renderer = (function () {
         const toX = function (wx) { return wx * scale - cx + w / 2; };
         const toY = function (wy) { return -wy * scale + cy + h / 2; };
 
-        ctx.fillStyle = COLOR_BG;
+        ctx.fillStyle = _getColors().bg;
         ctx.fillRect(0, 0, w, h);
 
         const worldLeft   = Math.floor((camX - w / 2) / GRID_STEP) * GRID_STEP;
@@ -163,7 +183,7 @@ const Renderer = (function () {
 
         for (let gx = worldLeft; gx <= worldRight; gx += GRID_STEP) {
             const sx = toX(gx);
-            ctx.strokeStyle = (gx % GRID_MAJOR_X === 0) ? COLOR_GRID_MAJOR : COLOR_GRID_MINOR;
+            ctx.strokeStyle = (gx % GRID_MAJOR_X === 0) ? _getColors().gridMajor : _getColors().gridMinor;
             ctx.beginPath();
             ctx.moveTo(sx, 0);
             ctx.lineTo(sx, h);
@@ -172,7 +192,7 @@ const Renderer = (function () {
 
         for (let gy = worldBottom; gy <= worldTop; gy += GRID_STEP) {
             const sy = toY(gy);
-            ctx.strokeStyle = (gy % GRID_MAJOR_Y === 0) ? COLOR_GRID_MAJOR : COLOR_GRID_MINOR;
+            ctx.strokeStyle = (gy % GRID_MAJOR_Y === 0) ? _getColors().gridMajor : _getColors().gridMinor;
             ctx.beginPath();
             ctx.moveTo(0, sy);
             ctx.lineTo(w, sy);
@@ -180,7 +200,7 @@ const Renderer = (function () {
         }
 
         ctx.lineWidth = 0.5;
-        ctx.strokeStyle = '#1a1a1a';
+        ctx.strokeStyle = _getColors().line;
 
         drawRotRect(ctx, toX, toY, scale, -513, 0, 0, 10, TRACK_THICK);
 
@@ -212,9 +232,9 @@ const Renderer = (function () {
             parentChromos.forEach(function(pc, idx) {
                 const px = frameX - idx * (frameW + 10);
                 const py = frameY;
-                ctx.fillStyle = 'rgba(255, 255, 200, 0.7)';
+                ctx.fillStyle = _getColors().parentBg;
                 ctx.fillRect(px, py, frameW, frameH);
-                ctx.strokeStyle = '#888';
+                ctx.strokeStyle = _getColors().parentEdge;
                 ctx.strokeRect(px, py, frameW, frameH);
 
                 const geom = World.getCarGeometry(pc);
@@ -250,16 +270,16 @@ const Renderer = (function () {
 
                 ctx.beginPath();
                 ctx.arc(0, 0, wr, 0, 2 * Math.PI);
-                ctx.fillStyle = COLOR_TRACK;
+                ctx.fillStyle = _getColors().track;
                 ctx.fill();
-                ctx.strokeStyle = '#000';
+                ctx.strokeStyle = _getColors().stroke;
                 ctx.lineWidth = 1;
                 ctx.stroke();
 
                 ctx.beginPath();
                 ctx.moveTo(0, 0);
                 ctx.lineTo(wr, 0);
-                ctx.strokeStyle = '#000';
+                ctx.strokeStyle = _getColors().stroke;
                 ctx.stroke();
 
                 ctx.restore();
@@ -490,7 +510,7 @@ const Renderer = (function () {
         ctx.closePath();
         ctx.stroke();
 
-        ctx.strokeStyle = '#333333';
+        ctx.strokeStyle = _getColors().stroke;
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.moveTo(bx, by);
@@ -507,7 +527,7 @@ const Renderer = (function () {
         ctx.save();
         ctx.translate(sx, sy);
         ctx.rotate(-angle);
-        ctx.fillStyle   = COLOR_TRACK;
+        ctx.fillStyle   = _getColors().track;
         ctx.fillRect(-hw * scale, -hh * scale, rw, rh);
         ctx.strokeRect(-hw * scale, -hh * scale, rw, rh);
         ctx.restore();

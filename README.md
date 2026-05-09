@@ -12,6 +12,7 @@ An evolution simulator for cars, inspired by [boxcar2d.com](http://boxcar2d.com)
 - **Procedural Generation**: Randomly generated chassis (8 triangular segments) and suspension systems.
 - **Physics**: Dynamic motorized wheels with realistic suspension.
 - **Destructible Chassis**: Segments break off under heavy impact, creating debris; wheels on broken segments are lost; car is destroyed when 7+ segments break.
+- **Dark Theme**: Toggle between light and dark themes (persisted in localStorage).
 
 ## Tech Stack
 

@@ -25,10 +25,10 @@ const HUD = (function () {
             'pointer-events:none;font-family:monospace;user-select:none;';
 
         _container.innerHTML =
-            '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:32px;color:blue;text-shadow:1px 1px 2px rgba(0,0,0,0.5);display:none;" id="hudPause">[PAUSE]</div>' +
+            '<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:32px;color:var(--pause-color);text-shadow:1px 1px 2px rgba(0,0,0,0.5);display:none;" id="hudPause">[PAUSE]</div>' +
 
-            '<div id="hudTableContainer" style="position:absolute;top:18px;left:5px;background:rgba(255,255,200,0.75);padding:4px 8px;pointer-events:auto;">' +
-            '<div style="font-size:12px;color:black;margin-bottom:2px;">' +
+            '<div id="hudTableContainer" style="position:absolute;top:18px;left:5px;background:var(--hud-bg);padding:4px 8px;pointer-events:auto;">' +
+            '<div style="font-size:12px;color:var(--hud-text);margin-bottom:2px;">' +
             '<span style="display:inline-block;width:20px;text-align:left;">#</span>' +
             '<span style="display:inline-block;width:48px;text-align:right;">Score</span>' +
             '<span style="display:inline-block;width:50px;text-align:right;">Time</span></div>' +
@@ -37,12 +37,12 @@ const HUD = (function () {
             '<div style="position:absolute;bottom:15%;left:50%;transform:translateX(-50%);font-size:24px;color:red;text-shadow:1px 1px 2px rgba(0,0,0,0.3);">' +
             '<span id="hudScore">Score: 0.0</span></div>' +
 
-            '<div style="position:absolute;top:12px;right:12px;font-size:14px;color:red;text-align:right;text-shadow:1px 1px 2px rgba(0,0,0,0.3);">' +
+            '<div style="position:absolute;top:40px;right:12px;font-size:14px;color:red;text-align:right;text-shadow:1px 1px 2px rgba(0,0,0,0.3);">' +
             '<div><span id="hudTime">Time: 5:00</span></div>' +
             '<div style="margin-top:2px;"><span id="hudTorque">Torque: 0.0</span></div>' +
             '<div style="margin-top:2px;"><span id="hudSpeed">Speed: 0.0</span></div></div>' +
 
-             '<div style="position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:14px;color:black;text-shadow:1px 1px 2px rgba(0,0,0,0.3);">' +
+             '<div style="position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:14px;color:var(--hud-gen-color);text-shadow:1px 1px 2px rgba(0,0,0,0.3);">' +
              '<span id="hudGen">Generation: 0</span></div>' +
              '<canvas id="hudGraph" style="position:absolute;top:60px;left:50%;transform:translateX(-50%);width:600px;height:200px;background:transparent;border:none;"></canvas>';
 
@@ -96,20 +96,20 @@ const HUD = (function () {
             const row = document.createElement('div');
             row.style.fontSize = '12px';
             row.style.marginTop = '1px';
-            row.style.borderTop = '1px solid rgba(0,0,0,0.15)';
+            row.style.borderTop = '1px solid var(--hud-border)';
             row.style.paddingTop = '1px';
-            row.style.color = 'black';
+            row.style.color = 'var(--hud-text)';
             row.style.cursor = 'pointer';
             row.style.position = 'relative';
             row.innerHTML =
                 '<span style="display:inline-block;width:20px;text-align:left;padding-left:2px;">' + (i + 1) + '</span>' +
                 '<span style="display:inline-block;width:48px;text-align:right;">' + _runs[i].score.toFixed(1) + '</span>' +
                 '<span style="display:inline-block;width:50px;text-align:right;">' + formatTime(_runs[i].time) + '</span>' +
-                '<span class="copyIcon" style="position:absolute;left:125px;top:0;opacity:0;font-size:11px;color:#555;white-space:nowrap;">📋</span>';
+                '<span class="copyIcon" style="position:absolute;left:125px;top:0;opacity:0;font-size:11px;color:var(--hud-icon-color);white-space:nowrap;">📋</span>';
 
             (function(rowIdx, rowEl) {
                 rowEl.addEventListener('mouseenter', function() {
-                    rowEl.style.background = 'rgba(255,255,220,0.9)';
+                    rowEl.style.background = 'var(--hud-row-hover)';
                     const icon = rowEl.querySelector('.copyIcon');
                     if (icon) icon.style.opacity = '1';
                 });
@@ -128,11 +128,11 @@ const HUD = (function () {
                                 if (icon) {
                                     icon.textContent = '✓';
                                     icon.style.opacity = '1';
-                                    icon.style.color = '#2a2';
+                                    icon.style.color = 'var(--hud-icon-ok)';
                                     clearTimeout(_copyTimers[rowIdx]);
                                     _copyTimers[rowIdx] = setTimeout(function() {
                                         icon.textContent = '📋';
-                                        icon.style.color = '#555';
+                                        icon.style.color = 'var(--hud-icon-color)';
                                     }, 1500);
                                 }
                             });
@@ -152,8 +152,8 @@ const HUD = (function () {
             const styleEl = document.createElement('style');
             styleEl.id = styleId;
             styleEl.textContent =
-                '.hudRowWinner{color:green!important;}' +
-                '.hudRowLoser{color:red!important;}';
+                '.hudRowWinner{color:var(--hud-winner)!important;}' +
+                '.hudRowLoser{color:var(--hud-loser)!important;}';
             document.head.appendChild(styleEl);
         }
 
@@ -162,7 +162,7 @@ const HUD = (function () {
             const row = document.createElement('div');
             row.style.fontSize = '12px';
             row.style.marginTop = '1px';
-            row.style.borderTop = '1px solid rgba(0,0,0,0.15)';
+            row.style.borderTop = '1px solid var(--hud-border)';
             row.style.paddingTop = '1px';
             row.style.position = 'relative';
             row.style.cursor = 'default';
@@ -172,7 +172,7 @@ const HUD = (function () {
             } else if (!item.hasOffspring) {
                 row.className = 'hudRowLoser';
             } else {
-                row.style.color = 'black';
+                row.style.color = 'var(--hud-text)';
             }
 
             row.innerHTML =
@@ -228,8 +228,8 @@ const HUD = (function () {
             ctx.stroke();
         }
 
-        drawLine(avgScores, 'black');
-        drawLine(maxScores, 'red');
+        drawLine(avgScores, Theme.isDark() ? '#aaa' : 'black');
+        drawLine(maxScores, Theme.isDark() ? '#f66' : 'red');
     }
 
     return { init: init, update: update, saveRun: saveRun, resetRuns: resetRuns, showResults: showResults, updateGeneration: updateGeneration, setPause: setPause, drawGraphs: drawGraphs, setCopyCallback: setCopyCallback };
