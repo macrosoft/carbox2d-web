@@ -3,7 +3,7 @@
 - IIFE + revealing module pattern: `const Module = (function(){ ... })();`
 - `'use strict'` at top of each IIFE (except config.js).
 - Named constants at module scope (no magic numbers).
-- Script loading order: planck.min.js → config.js → theme.js → track_loader.js → chromosome.js → car_builder.js → world.js → hud.js → renderer.js → game.js.
+- Script loading order: planck.min.js → config.js → theme.js → track_loader.js → chromosome.js → car_builder.js → world.js → hud.js → camera.js → renderer.js → game.js.
 
 ## Physics (Planck.js)
 - `planck.js` (no `b2` prefix). Methods: `lowerCamelCase`.
@@ -17,7 +17,8 @@
 **world.js** — physics simulation, breakage, scoring.
 **theme.js** — dark/light theme toggle, persisted to localStorage.
 **hud.js** — HTML overlay: score, time, table, graphs.
-**renderer.js** — canvas rendering: camera, grid, track, chassis, wheels, debris.
+**camera.js** — viewport management: position, smoothing, resize, coordinate transforms.
+**renderer.js** — canvas rendering: grid, track, chassis, wheels, debris, sparks, parents.
 **game.js** — main loop, population (size=32), selection, crossover.
 
 ## Chromosome (DNA)

@@ -40,44 +40,26 @@ const Renderer = (function () {
     function Renderer(canvas) {
         this.canvas = canvas;
         this.ctx    = canvas.getContext('2d');
-        this.cameraX = 0;
-        this.cameraY = 0;
-        this.targetX = 0;
-        this.targetY = 0;
-        this.dpr     = window.devicePixelRatio || 1;
         this.flagPos = null;
+        this.camera = new Camera.Camera(canvas);
         this.resize();
     }
 
     Renderer.prototype.setCamera = function (x, y) {
-        this.cameraX = x;
-        this.cameraY = y;
-        this.targetX = x;
-        this.targetY = y;
+        this.camera.setCamera(x, y);
     };
 
     Renderer.prototype.resize = function () {
-        this.w = window.innerWidth;
-        this.h = window.innerHeight;
-        this.canvas.width  = this.w * this.dpr;
-        this.canvas.height = this.h * this.dpr;
-        this.canvas.style.width  = this.w + 'px';
-        this.canvas.style.height = this.h + 'px';
-        this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+        this.camera.resize();
+        this.ctx.setTransform(this.camera.dpr, 0, 0, this.camera.dpr, 0, 0);
     };
 
     Renderer.prototype.follow = function (x, y) {
-        this.targetX = x;
-        this.targetY = y + CAMERA_Y_OFFSET;
+        this.camera.follow(x, y);
     };
 
     Renderer.prototype.setFlagPos = function (pos) {
         this.flagPos = pos;
-    };
-
-    Renderer.prototype.updateCamera = function () {
-        this.cameraX = this.targetX;
-        this.cameraY += (this.targetY - this.cameraY) * CAMERA_SMOOTH;
     };
 
     Renderer.prototype.drawLightChassis = function (geometry, x, y, scale, angle) {
@@ -156,13 +138,13 @@ const Renderer = (function () {
 
     Renderer.prototype.draw = function (chassis, parentChromos, sparks) {
         this.resize();
-        this.updateCamera();
+        this.camera.updateCamera();
 
         const ctx   = this.ctx,
-              w     = this.w,
-              h     = this.h,
-              camX  = this.cameraX,
-              camY  = this.cameraY,
+              w     = this.camera.w,
+              h     = this.camera.h,
+              camX  = this.camera.cameraX,
+              camY  = this.camera.cameraY,
               scale = CAMERA_SCALE;
 
         const cx = camX * scale;
