@@ -125,7 +125,7 @@ const Renderer = (function () {
             ctx.lineTo(vv1[0] * scale, -vv1[1] * scale);
             ctx.lineTo(vv2[0] * scale, -vv2[1] * scale);
             ctx.closePath();
-            ctx.fillStyle = vCol.replace('rgb', 'rgba').replace(')', ',0.6)');
+            ctx.fillStyle = vCol.replace('rgb', 'rgba').replace(')', ',' + RGBA_ALPHA + ')');
             ctx.fill();
             ctx.strokeStyle = vCol;
             ctx.stroke();
@@ -143,7 +143,7 @@ const Renderer = (function () {
               h     = this.h,
               camX  = this.cameraX,
               camY  = this.cameraY,
-              scale = 45;
+              scale = CAMERA_SCALE;
 
         const cx = camX * scale;
         const cy = camY * scale;
@@ -334,7 +334,7 @@ const Renderer = (function () {
                 ctx.lineTo(v1[0] * scale, -v1[1] * scale);
                 ctx.lineTo(v2[0] * scale, -v2[1] * scale);
                 ctx.closePath();
-                ctx.fillStyle = col.replace('rgb', 'rgba').replace(')', ',0.6)');
+                ctx.fillStyle = col.replace('rgb', 'rgba').replace(')', ',' + RGBA_ALPHA + ')');
                 ctx.fill();
                 ctx.strokeStyle = col;
                 ctx.stroke();
@@ -354,7 +354,7 @@ const Renderer = (function () {
                     ctx.lineTo(mShape.m_vertices[vIdx].x * scale, -mShape.m_vertices[vIdx].y * scale);
                 }
                 ctx.closePath();
-                ctx.fillStyle = mountCol.replace('rgb', 'rgba').replace(')', ',0.6)');
+                ctx.fillStyle = mountCol.replace('rgb', 'rgba').replace(')', ',' + RGBA_ALPHA + ')');
                 ctx.fill();
                 ctx.strokeStyle = mountCol;
                 ctx.stroke();
@@ -390,7 +390,7 @@ const Renderer = (function () {
                     ctx.lineTo(verts[v].x * scale, -verts[v].y * scale);
                 }
                 ctx.closePath();
-                ctx.fillStyle = color.replace('rgb', 'rgba').replace(')', ',0.6)');
+                ctx.fillStyle = color.replace('rgb', 'rgba').replace(')', ',' + RGBA_ALPHA + ')');
                 ctx.fill();
                 ctx.strokeStyle = color;
                 ctx.stroke();
@@ -420,7 +420,7 @@ const Renderer = (function () {
                 const shape = fix.getShape();
                 if (shape.m_vertices) {
                     const verts = shape.m_vertices;
-                    ctx.fillStyle = color.replace('rgb', 'rgba').replace(')', ',0.6)');
+                    ctx.fillStyle = color.replace('rgb', 'rgba').replace(')', ',' + RGBA_ALPHA + ')');
                     ctx.beginPath();
                     ctx.moveTo(verts[0].x * scale, -verts[0].y * scale);
                     for (let v = 1; v < verts.length; v++) {

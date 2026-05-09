@@ -1,7 +1,6 @@
 const World = (function () {
     'use strict';
 
-    const NUM_SEGMENTS = 8;
     const CAR_FILTER = { filterCategoryBits: 0x0001, filterMaskBits: 0x0002, filterGroupIndex: -1 };
     const TRACK_FILTER = { filterCategoryBits: 0x0002, filterMaskBits: 0x0001 };
     const START_POS_X = -500;
@@ -63,14 +62,14 @@ const World = (function () {
 
         trackBody.createFixture(
             new planck.BoxShape(10, TRACK_THICK, planck.Vec2(-513, 0), 0),
-            { density: 0, friction: 10, restitution: 0, ...TRACK_FILTER }
+            { density: 0, friction: TRACK_FRICTION, restitution: 0, ...TRACK_FILTER }
         );
 
         for (let i = 0; i < _trackCount; i++) {
             const base = i * 3;
             trackBody.createFixture(
                 new planck.BoxShape(TRACK_HALF_W, TRACK_THICK, planck.Vec2(_trackData[base], _trackData[base + 1]), _trackData[base + 2]),
-                { density: 0, friction: 10, restitution: 0, ...TRACK_FILTER }
+                { density: 0, friction: TRACK_FRICTION, restitution: 0, ...TRACK_FILTER }
             );
         }
 
@@ -113,7 +112,7 @@ const World = (function () {
 
             const fixture = chassis.createFixture(
                 new planck.PolygonShape([planck.Vec2(0, 0), planck.Vec2(p1x, p1y), planck.Vec2(p2x, p2y)]),
-                { density: 2, friction: 10, restitution: 0.05, ...CAR_FILTER }
+                { density: 2, friction: TRACK_FRICTION, restitution: 0.05, ...CAR_FILTER }
             );
             fixture.segmentIndex = i;
             segFixtures.push(fixture);
@@ -157,7 +156,7 @@ const World = (function () {
 
             const mountFixture = chassis.createFixture(
                 new planck.BoxShape(MOUNT_BOX_HW, MOUNT_BOX_HH, planck.Vec2(px, py), axleAngle),
-                { density: 2, friction: 10, restitution: 0.05, ...CAR_FILTER }
+                { density: 2, friction: TRACK_FRICTION, restitution: 0.05, ...CAR_FILTER }
             );
             mountFixture.axleMount = true;
             mountFixture.wheelIndex = i;
@@ -176,7 +175,7 @@ const World = (function () {
 
             const axleFixture = axleBody.createFixture(
                 new planck.BoxShape(AXLE_BOX_HW, AXLE_BOX_HH, AXLE_BOX_OFFSET, 0),
-                { density: 20, friction: 10, restitution: 0.05, ...CAR_FILTER }
+                { density: 20, friction: TRACK_FRICTION, restitution: 0.05, ...CAR_FILTER }
             );
             axleFixture.axleBodyFixture = true;
             axleFixture.wheelIndex = i;
@@ -212,7 +211,7 @@ const World = (function () {
             });
             wheelBody.createFixture(
                 new planck.CircleShape(wheelRadius),
-                { density: 0.5, friction: 10, restitution: 0.1, ...CAR_FILTER }
+                { density: 0.5, friction: TRACK_FRICTION, restitution: 0.1, ...CAR_FILTER }
             );
 
             const wheelJoint = worldInstance.createJoint(new planck.RevoluteJoint({
@@ -231,7 +230,7 @@ const World = (function () {
 
     function initPhysics(worldInstance) {
         worldInstance.world = new planck.World({
-            gravity: planck.Vec2(0, -15),
+            gravity: planck.Vec2(0, GRAVITY),
             continuousPhysics: true,
             autoClearForces: true
         });
@@ -248,8 +247,8 @@ const World = (function () {
         this.iteration = 0;
         this.maxPosition = 0;
         this.furthestPos = null;
-        this.TRACK_LENGTH = 1500;
-        this.MAX_ITERATION = 5 * 60 * 60;
+        this.TRACK_LENGTH = TRACK_LENGTH;
+        this.MAX_ITERATION = TIME_LIMIT * 60;
         this.slow = 0;
         this.prevDist = 0;
         this.stopped = false;
@@ -346,12 +345,12 @@ const World = (function () {
             slot.body.destroyFixture(slot.fixture);
             slot.body.createFixture(
                 new planck.BoxShape(AXLE_BOX_HW, AXLE_BOX_HH, AXLE_BOX_OFFSET, 0),
-                { density: 20, friction: 10, restitution: 0.05,
+                { density: 20, friction: TRACK_FRICTION, restitution: 0.05,
                   filterCategoryBits: CAR_FILTER.filterCategoryBits, filterMaskBits: BROKEN_MASK }
             );
             slot.body.createFixture(
                 new planck.BoxShape(MOUNT_BOX_HW, MOUNT_BOX_HH, planck.Vec2(0, 0), 0),
-                { density: 2, friction: 10, restitution: 0.05,
+                { density: 2, friction: TRACK_FRICTION, restitution: 0.05,
                   filterCategoryBits: CAR_FILTER.filterCategoryBits, filterMaskBits: BROKEN_MASK }
             );
         }
@@ -444,7 +443,7 @@ const World = (function () {
             angle: angle,
             allowSleep: false
         });
-        debrisBody.createFixture(shape, { density: 2, friction: 10, restitution: 0.05, ...CAR_FILTER });
+        debrisBody.createFixture(shape, { density: 2, friction: TRACK_FRICTION, restitution: 0.05, ...CAR_FILTER });
         debrisBody.setLinearVelocity(vel);
 
         chassis.debris.push({ body: debrisBody, color: chassis.colors[i] });
@@ -465,7 +464,7 @@ const World = (function () {
             if (!chassis.segmentBreakFlags[i]) continue;
             chassis.segmentBreakFlags[i] = false;
             if (!chassis.segFixtures[i]) continue;
-            if (chassis.brokeNum >= 7) continue;
+            if (chassis.brokeNum >= MAX_BROKEN) continue;
             this.breakSegment(i);
         }
 
@@ -521,7 +520,7 @@ const World = (function () {
             || dist >= this.TRACK_LENGTH
             || this.iteration > this.MAX_ITERATION
             || dist < BACKWARD_DIST
-            || this.chassis.brokeNum >= 7;
+            || this.chassis.brokeNum >= MAX_BROKEN;
     };
 
     World.prototype.getChassisPos = function () {

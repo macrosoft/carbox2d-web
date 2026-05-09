@@ -1,14 +1,6 @@
 const CarBuilder = (function () {
     'use strict';
 
-    const NUM_SEGMENTS = 8;
-    const MIN_ANGLE = 0.08;
-    const MIN_MAG = 0.1;
-    const MAX_MAG = 3.0;
-    const WHEEL_PROB0 = 0.5;
-    const MIN_WHEEL = 0.1;
-    const MAX_WHEEL = 1.5;
-
     function decodeChromosome(genes) {
         const angles = [];
         const mags = [];

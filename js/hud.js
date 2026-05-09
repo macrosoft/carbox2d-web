@@ -15,7 +15,7 @@ const HUD = (function () {
     let _copyCallback = null;
     let _copyTimers = {};
 
-    const _maxRuns = 32;
+    const _maxRuns = POPULATION_SIZE;
 
     function init() {
         _container = document.createElement('div');

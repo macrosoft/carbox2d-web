@@ -1,7 +1,6 @@
 const Chromosome = (function () {
     'use strict';
 
-    const NUM_SEGMENTS = 8;
     const GENES_SIZE = 40;
 
     function generate() {
@@ -18,11 +17,11 @@ const Chromosome = (function () {
             genes[16 + i * 3 + 2] = Math.random();
         }
 
-        const r = Math.floor(Math.random() * 256);
-        const g = Math.floor(Math.random() * 256);
-        const b = Math.floor(Math.random() * 256);
+        const r = Math.floor(Math.random() * COLOR_RANGE);
+        const g = Math.floor(Math.random() * COLOR_RANGE);
+        const b = Math.floor(Math.random() * COLOR_RANGE);
         const colors = [];
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < NUM_COLORS; i++) {
             colors.push([r, g, b]);
         }
 
@@ -64,7 +63,7 @@ const Chromosome = (function () {
         const genesB = new Float32Array(GENES_SIZE);
         const colorsA = [];
         const colorsB = [];
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < NUM_COLORS; i++) {
             colorsA.push([0, 0, 0]);
             colorsB.push([0, 0, 0]);
         }
@@ -100,7 +99,7 @@ const Chromosome = (function () {
         const genes = new Float32Array(GENES_SIZE);
         genes.set(chromo.genes);
         const colors = [];
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < NUM_COLORS; i++) {
             colors.push([chromo.colors[i][0], chromo.colors[i][1], chromo.colors[i][2]]);
         }
         return { genes: genes, colors: colors };
@@ -137,7 +136,7 @@ const Chromosome = (function () {
 
     function decodeColors(str) {
         const out = [];
-        for (let i = 0; i < 16; i++) {
+        for (let i = 0; i < NUM_COLORS; i++) {
             const hex = str.substring(i * 6, i * 6 + 6);
             const r = parseInt(hex.substring(0, 2), 16);
             const g = parseInt(hex.substring(2, 4), 16);

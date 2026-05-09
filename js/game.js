@@ -16,7 +16,6 @@
         }
     });
 
-    const POPULATION_SIZE = 32;
     let _population = [];
     let _results = [];
     let _carIndex = 0;
@@ -85,7 +84,7 @@
             }
             shuffle(indices);
 
-            for (let pair = 0; pair < 14; pair++) {
+            for (let pair = 0; pair < CROSSOVER_PAIRS; pair++) {
                 const idxA = indices[pair * 2];
                 const idxB = indices[pair * 2 + 1];
                 parentSet.add(idxA);
@@ -101,13 +100,13 @@
             _population.push(Chromosome.clone(indexed[0].chromo));
             _population[_population.length - 1].parents = [indexed[0].chromo];
 
-            for (let n = 0; n < 3; n++) {
+            for (let n = 0; n < RANDOM_COUNT; n++) {
                 const chromo = Chromosome.generate();
                 chromo.parents = null;
                 _population.push(chromo);
             }
 
-            for (let pair = 0; pair < 14; pair++) {
+            for (let pair = 0; pair < CROSSOVER_PAIRS; pair++) {
                 const pa = indexed[indices[pair * 2]].chromo;
                 const pb = indexed[indices[pair * 2 + 1]].chromo;
                 const result = Chromosome.crossover(pa, pb);
@@ -154,7 +153,7 @@
             let dt = (timestamp - lastTick) / 1000;
             lastTick = timestamp;
 
-            if (dt > 0.1) dt = 0.1;
+            if (dt > MAX_DT) dt = MAX_DT;
             accumulator += dt;
 
             while (accumulator >= TIME_STEP) {
