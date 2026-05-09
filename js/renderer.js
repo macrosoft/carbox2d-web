@@ -143,7 +143,7 @@ const Renderer = (function () {
               h     = this.h,
               camX  = this.cameraX,
               camY  = this.cameraY,
-              scale = 32;
+              scale = 45;
 
         const cx = camX * scale;
         const cy = camY * scale;
