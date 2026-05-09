@@ -165,7 +165,7 @@ const HUD = (function () {
             row.style.borderTop = '1px solid var(--hud-border)';
             row.style.paddingTop = '1px';
             row.style.position = 'relative';
-            row.style.cursor = 'default';
+            row.style.cursor = 'pointer';
 
             if (i === 0) {
                 row.className = 'hudRowWinner';
@@ -178,7 +178,42 @@ const HUD = (function () {
             row.innerHTML =
                 '<span style="display:inline-block;width:20px;text-align:left;padding-left:2px;">' + (i + 1) + '</span>' +
                 '<span style="display:inline-block;width:48px;text-align:right;">' + item.score.toFixed(1) + '</span>' +
-                '<span style="display:inline-block;width:50px;text-align:right;">' + formatTime(item.time) + '</span>';
+                '<span style="display:inline-block;width:50px;text-align:right;">' + formatTime(item.time) + '</span>' +
+                '<span class="copyIcon" style="position:absolute;left:125px;top:0;opacity:0;font-size:11px;color:var(--hud-icon-color);white-space:nowrap;">📋</span>';
+
+            (function(rowIdx, rowEl) {
+                rowEl.addEventListener('mouseenter', function() {
+                    rowEl.style.background = 'var(--hud-row-hover)';
+                    const icon = rowEl.querySelector('.copyIcon');
+                    if (icon) icon.style.opacity = '1';
+                });
+                rowEl.addEventListener('mouseleave', function() {
+                    rowEl.style.background = '';
+                    const icon = rowEl.querySelector('.copyIcon');
+                    if (icon) icon.style.opacity = '0';
+                });
+                rowEl.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    if (_copyCallback) {
+                        const chromo = _copyCallback(rowIdx);
+                        if (chromo) {
+                            navigator.clipboard.writeText(Chromosome.serialize(chromo)).then(function() {
+                                const icon = rowEl.querySelector('.copyIcon');
+                                if (icon) {
+                                    icon.textContent = '✓';
+                                    icon.style.opacity = '1';
+                                    icon.style.color = 'var(--hud-icon-ok)';
+                                    clearTimeout(_copyTimers[rowIdx]);
+                                    _copyTimers[rowIdx] = setTimeout(function() {
+                                        icon.textContent = '📋';
+                                        icon.style.color = 'var(--hud-icon-color)';
+                                    }, 1500);
+                                }
+                            });
+                        }
+                    }
+                });
+            })(i, row);
 
             _tableBody.appendChild(row);
         }
