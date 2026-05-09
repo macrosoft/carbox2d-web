@@ -223,7 +223,7 @@ const Renderer = (function () {
 
         if (parentChromos && parentChromos.length > 0) {
             const frameW = 120;
-            const frameH = 72;
+            const frameH = 120;
             const frameX = w - frameW - 20;
             const frameY = h - frameH - 20;
             const pScale = 12;
@@ -235,6 +235,7 @@ const Renderer = (function () {
                 ctx.fillStyle = _getColors().parentBg;
                 ctx.fillRect(px, py, frameW, frameH);
                 ctx.strokeStyle = _getColors().parentEdge;
+                ctx.lineWidth = 1;
                 ctx.strokeRect(px, py, frameW, frameH);
 
                 const geom = World.getCarGeometry(pc);
