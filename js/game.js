@@ -143,7 +143,7 @@
 
         function frame(timestamp) {
             if (lastTick === null) lastTick = timestamp;
-            const dt = (timestamp - lastTick) / 1000;
+            let dt = (timestamp - lastTick) / 1000;
             lastTick = timestamp;
 
             if (dt > 0.1) dt = 0.1;
