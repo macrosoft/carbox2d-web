@@ -1,15 +1,16 @@
-var Renderer = (function () {
+const Renderer = (function () {
+    'use strict';
 
-    var COLOR_BG         = '#FFFFC8';
-    var COLOR_GRID_MINOR = '#CCCCCC';
-    var COLOR_GRID_MAJOR = '#FF0080';
-    var COLOR_TRACK       = 'rgba(0, 0, 0, 0.5)';
+    const COLOR_BG         = '#FFFFC8';
+    const COLOR_GRID_MINOR = '#CCCCCC';
+    const COLOR_GRID_MAJOR = '#FF0080';
+    const COLOR_TRACK       = 'rgba(0, 0, 0, 0.5)';
 
-    var GRID_STEP    = 1;
-    var GRID_MAJOR_X = 100;
-    var GRID_MAJOR_Y = 20;
-    var _trackCount = 0;
-    var _trackData = null;
+    const GRID_STEP    = 1;
+    const GRID_MAJOR_X = 100;
+    const GRID_MAJOR_Y = 20;
+    let _trackCount = 0;
+    let _trackData = null;
 
     function setTrackData(track) {
         _trackCount = track.count;
@@ -55,21 +56,20 @@ var Renderer = (function () {
     };
 
     Renderer.prototype.drawLightChassis = function (geometry, x, y, scale, angle) {
-        var ctx = this.ctx;
-        var sx = x * scale;
-        var sy = -y * scale;
+        const ctx = this.ctx;
+        const sx = x * scale;
+        const sy = -y * scale;
 
         ctx.save();
         ctx.translate(sx, sy);
         ctx.rotate(-angle);
 
-        // Wheels
         if (geometry.wheels) {
             geometry.wheels.forEach(function(wheel) {
                 if (!wheel) return;
-                var wx = wheel.pos.x * scale;
-                var wy = -wheel.pos.y * scale;
-                var wr = wheel.radius * scale;
+                const wx = wheel.pos.x * scale;
+                const wy = -wheel.pos.y * scale;
+                const wr = wheel.radius * scale;
 
                 ctx.save();
                 ctx.translate(wx, wy);
@@ -85,13 +85,12 @@ var Renderer = (function () {
             });
         }
 
-        // Axles
         if (geometry.wheels) {
             geometry.wheels.forEach(function(wheel, idx) {
                 if (!wheel) return;
-                var ax = wheel.pos.x * scale;
-                var ay = -wheel.pos.y * scale;
-                var axleColor = geometry.axleColors && geometry.axleColors[idx] ? geometry.axleColors[idx] : 'rgb(128,128,128)';
+                const ax = wheel.pos.x * scale;
+                const ay = -wheel.pos.y * scale;
+                const axleColor = geometry.axleColors && geometry.axleColors[idx] ? geometry.axleColors[idx] : 'rgb(128,128,128)';
 
                 ctx.save();
                 ctx.translate(ax, ay);
@@ -105,18 +104,17 @@ var Renderer = (function () {
             });
         }
 
-        // Chassis fills
-        var vVerts = geometry.vertices;
-        var vSegColors = geometry.colors;
-        var vNUM = vSegColors ? vSegColors.length : 8;
+        const vVerts = geometry.vertices;
+        const vSegColors = geometry.colors;
+        const vNUM = vSegColors ? vSegColors.length : 8;
         ctx.lineWidth = 1;
         ctx.lineJoin = 'round';
 
-        for (var i = 0; i < vNUM; i++) {
-            var vv0 = vVerts[0];
-            var vv1 = vVerts[i + 1];
-            var vv2 = vVerts[(i + 2) > vNUM ? 1 : i + 2];
-            var vCol = vSegColors[i] || 'rgb(128,128,128)';
+        for (let i = 0; i < vNUM; i++) {
+            const vv0 = vVerts[0];
+            const vv1 = vVerts[i + 1];
+            const vv2 = vVerts[(i + 2) > vNUM ? 1 : i + 2];
+            const vCol = vSegColors[i] || 'rgb(128,128,128)';
             ctx.beginPath();
             ctx.moveTo(vv0[0] * scale, -vv0[1] * scale);
             ctx.lineTo(vv1[0] * scale, -vv1[1] * scale);
@@ -135,32 +133,31 @@ var Renderer = (function () {
         this.resize();
         this.updateCamera();
 
-        var ctx   = this.ctx,
-            w     = this.w,
-            h     = this.h,
-            camX  = this.cameraX,
-            camY  = this.cameraY,
-            scale = 32;
+        const ctx   = this.ctx,
+              w     = this.w,
+              h     = this.h,
+              camX  = this.cameraX,
+              camY  = this.cameraY,
+              scale = 32;
 
-        var cx = camX * scale;
-        var cy = camY * scale;
+        const cx = camX * scale;
+        const cy = camY * scale;
 
-        var toX = function (wx) { return wx * scale - cx + w / 2; };
-        var toY = function (wy) { return -wy * scale + cy + h / 2; };
+        const toX = function (wx) { return wx * scale - cx + w / 2; };
+        const toY = function (wy) { return -wy * scale + cy + h / 2; };
 
         ctx.fillStyle = COLOR_BG;
         ctx.fillRect(0, 0, w, h);
 
-        // Grid
-        var worldLeft   = Math.floor((camX - w / 2) / GRID_STEP) * GRID_STEP;
-        var worldRight  = Math.ceil((camX + w / 2) / GRID_STEP) * GRID_STEP;
-        var worldBottom = Math.floor((camY - h / 2) / GRID_STEP) * GRID_STEP;
-        var worldTop    = Math.ceil((camY + h / 2) / GRID_STEP) * GRID_STEP;
+        const worldLeft   = Math.floor((camX - w / 2) / GRID_STEP) * GRID_STEP;
+        const worldRight  = Math.ceil((camX + w / 2) / GRID_STEP) * GRID_STEP;
+        const worldBottom = Math.floor((camY - h / 2) / GRID_STEP) * GRID_STEP;
+        const worldTop    = Math.ceil((camY + h / 2) / GRID_STEP) * GRID_STEP;
 
         ctx.lineWidth = 0.5;
 
-        for (var gx = worldLeft; gx <= worldRight; gx += GRID_STEP) {
-            var sx = toX(gx);
+        for (let gx = worldLeft; gx <= worldRight; gx += GRID_STEP) {
+            const sx = toX(gx);
             ctx.strokeStyle = (gx % GRID_MAJOR_X === 0) ? COLOR_GRID_MAJOR : COLOR_GRID_MINOR;
             ctx.beginPath();
             ctx.moveTo(sx, 0);
@@ -168,8 +165,8 @@ var Renderer = (function () {
             ctx.stroke();
         }
 
-        for (var gy = worldBottom; gy <= worldTop; gy += GRID_STEP) {
-            var sy = toY(gy);
+        for (let gy = worldBottom; gy <= worldTop; gy += GRID_STEP) {
+            const sy = toY(gy);
             ctx.strokeStyle = (gy % GRID_MAJOR_Y === 0) ? COLOR_GRID_MAJOR : COLOR_GRID_MINOR;
             ctx.beginPath();
             ctx.moveTo(0, sy);
@@ -177,44 +174,41 @@ var Renderer = (function () {
             ctx.stroke();
         }
 
-        // Track
         ctx.lineWidth = 0.5;
         ctx.strokeStyle = '#1a1a1a';
 
         drawRotRect(ctx, toX, toY, scale, -513, 0, 0, 10, TRACK_THICK);
 
-        for (var i = 0; i < _trackCount; i++) {
-            var base = i * 3;
+        for (let i = 0; i < _trackCount; i++) {
+            const base = i * 3;
             drawRotRect(ctx, toX, toY, scale, _trackData[base], _trackData[base + 1], _trackData[base + 2], TRACK_HALF_W, TRACK_THICK);
         }
 
-        // Chassis
         if (chassis) {
             this.drawChassis(chassis, toX, toY, scale);
         }
 
-        // Sparks
         if (sparks) {
             this.drawSparks(sparks, toX, toY, scale);
         }
 
         if (parentChromos && parentChromos.length > 0) {
-            var frameW = 120;
-            var frameH = 72;
-            var frameX = w - frameW - 20;
-            var frameY = h - frameH - 20;
-            var pScale = 12;
-            var self = this;
+            const frameW = 120;
+            const frameH = 72;
+            const frameX = w - frameW - 20;
+            const frameY = h - frameH - 20;
+            const pScale = 12;
+            const self = this;
 
             parentChromos.forEach(function(pc, idx) {
-                var px = frameX - idx * (frameW + 10);
-                var py = frameY;
+                const px = frameX - idx * (frameW + 10);
+                const py = frameY;
                 ctx.fillStyle = 'rgba(255, 255, 200, 0.7)';
                 ctx.fillRect(px, py, frameW, frameH);
                 ctx.strokeStyle = '#888';
                 ctx.strokeRect(px, py, frameW, frameH);
 
-                var geom = World.getCarGeometry(pc);
+                const geom = World.getCarGeometry(pc);
                 ctx.save();
                 ctx.translate(px + frameW / 2, py + frameH / 2);
                 self.drawLightChassis(geom, 0, 0, pScale, 0);
@@ -224,10 +218,10 @@ var Renderer = (function () {
     };
 
     Renderer.prototype.drawChassis = function (chassis, toX, toY, scale) {
-        var ctx = this.ctx;
+        const ctx = this.ctx;
 
         if (chassis.debris) {
-            for (var d = 0; d < chassis.debris.length; d++) {
+            for (let d = 0; d < chassis.debris.length; d++) {
                 this.drawDebrisPiece(chassis.debris[d], toX, toY, scale);
             }
         }
@@ -235,11 +229,11 @@ var Renderer = (function () {
         if (chassis.wheels) {
             chassis.wheels.forEach(function(wheel) {
                 if (!wheel) return;
-                var wPos = wheel.body.getPosition();
-                var wAngle = wheel.body.getAngle();
-                var wx = toX(wPos.x);
-                var wy = toY(wPos.y);
-                var wr = wheel.radius * scale;
+                const wPos = wheel.body.getPosition();
+                const wAngle = wheel.body.getAngle();
+                const wx = toX(wPos.x);
+                const wy = toY(wPos.y);
+                const wr = wheel.radius * scale;
 
                 ctx.save();
                 ctx.translate(wx, wy);
@@ -266,12 +260,12 @@ var Renderer = (function () {
         if (chassis.axles) {
             chassis.axles.forEach(function(axle, idx) {
                 if (!axle) return;
-                var aPos = axle.getPosition();
-                var aAngle = axle.getAngle();
-                var ax = toX(aPos.x);
-                var ay = toY(aPos.y);
+                const aPos = axle.getPosition();
+                const aAngle = axle.getAngle();
+                const ax = toX(aPos.x);
+                const ay = toY(aPos.y);
 
-                var axleColor = chassis.axleColors && chassis.axleColors[idx] ? chassis.axleColors[idx] : 'rgb(128,128,128)';
+                const axleColor = chassis.axleColors && chassis.axleColors[idx] ? chassis.axleColors[idx] : 'rgb(128,128,128)';
 
                 ctx.save();
                 ctx.translate(ax, ay);
@@ -280,13 +274,13 @@ var Renderer = (function () {
                 ctx.strokeStyle = axleColor;
                 ctx.lineWidth = 1;
 
-                var fix = axle.getFixtureList();
+                let fix = axle.getFixtureList();
                 while (fix) {
-                    var shape = fix.getShape();
+                    const shape = fix.getShape();
                     if (shape.m_vertices && shape.m_vertices.length === 4) {
                         ctx.beginPath();
                         ctx.moveTo(shape.m_vertices[0].x * scale, -shape.m_vertices[0].y * scale);
-                        for (var vv = 1; vv < 4; vv++) {
+                        for (let vv = 1; vv < 4; vv++) {
                             ctx.lineTo(shape.m_vertices[vv].x * scale, -shape.m_vertices[vv].y * scale);
                         }
                         ctx.closePath();
@@ -300,10 +294,10 @@ var Renderer = (function () {
             });
         }
 
-        var pos = chassis.getPosition();
-        var angle = chassis.getAngle();
-        var sx = toX(pos.x);
-        var sy = toY(pos.y);
+        const pos = chassis.getPosition();
+        const angle = chassis.getAngle();
+        const sx = toX(pos.x);
+        const sy = toY(pos.y);
 
         ctx.save();
         ctx.translate(sx, sy);
@@ -311,21 +305,20 @@ var Renderer = (function () {
 
         ctx.lineWidth = 1.5;
 
-        var verts = chassis.vertices;
-        var segColors = chassis.colors;
-        var NUM = segColors ? segColors.length : 8;
+        const verts = chassis.vertices;
+        const segColors = chassis.colors;
+        const NUM = segColors ? segColors.length : 8;
 
-        var centerX = verts[0][0] * scale;
-        var centerY = -verts[0][1] * scale;
+        const centerX = verts[0][0] * scale;
+        const centerY = -verts[0][1] * scale;
 
         ctx.lineJoin = 'round';
 
-        // Fills
-        for (var i = 0; i < NUM; i++) {
+        for (let i = 0; i < NUM; i++) {
             if (!chassis.segFixtures || chassis.segFixtures[i]) {
-                var v1 = verts[i + 1];
-                var v2 = verts[(i + 2) > NUM ? 1 : i + 2];
-                var col = segColors[i] || 'rgb(128,128,128)';
+                const v1 = verts[i + 1];
+                const v2 = verts[(i + 2) > NUM ? 1 : i + 2];
+                const col = segColors[i] || 'rgb(128,128,128)';
 
                 ctx.beginPath();
                 ctx.moveTo(centerX, centerY);
@@ -339,16 +332,16 @@ var Renderer = (function () {
             }
         }
 
-        var mountFix = chassis.getFixtureList();
+        let mountFix = chassis.getFixtureList();
         while (mountFix) {
-            var mShape = mountFix.getShape();
+            const mShape = mountFix.getShape();
             if (mShape.m_vertices && mShape.m_vertices.length === 4) {
-                var wIdx = mountFix.wheelIndex;
-                var mountCol = chassis.axleColors && chassis.axleColors[wIdx] ? chassis.axleColors[wIdx] : 'rgb(128,128,128)';
+                const wIdx = mountFix.wheelIndex;
+                const mountCol = chassis.axleColors && chassis.axleColors[wIdx] ? chassis.axleColors[wIdx] : 'rgb(128,128,128)';
 
                 ctx.beginPath();
                 ctx.moveTo(mShape.m_vertices[0].x * scale, -mShape.m_vertices[0].y * scale);
-                for (var vIdx = 1; vIdx < 4; vIdx++) {
+                for (let vIdx = 1; vIdx < 4; vIdx++) {
                     ctx.lineTo(mShape.m_vertices[vIdx].x * scale, -mShape.m_vertices[vIdx].y * scale);
                 }
                 ctx.closePath();
@@ -364,27 +357,27 @@ var Renderer = (function () {
     };
 
     Renderer.prototype.drawDebrisPiece = function (debris, toX, toY, scale) {
-        var ctx = this.ctx;
-        var body = debris.body;
-        var color = debris.color;
-        var pos = body.getPosition();
-        var angle = body.getAngle();
-        var sx = toX(pos.x);
-        var sy = toY(pos.y);
+        const ctx = this.ctx;
+        const body = debris.body;
+        const color = debris.color;
+        const pos = body.getPosition();
+        const angle = body.getAngle();
+        const sx = toX(pos.x);
+        const sy = toY(pos.y);
 
         ctx.save();
         ctx.translate(sx, sy);
         ctx.rotate(-angle);
         ctx.lineWidth = 1.5;
 
-        var fix = body.getFixtureList();
+        let fix = body.getFixtureList();
         while (fix) {
-            var shape = fix.getShape();
+            const shape = fix.getShape();
             if (shape.m_vertices) {
-                var verts = shape.m_vertices;
+                const verts = shape.m_vertices;
                 ctx.beginPath();
                 ctx.moveTo(verts[0].x * scale, -verts[0].y * scale);
-                for (var v = 1; v < verts.length; v++) {
+                for (let v = 1; v < verts.length; v++) {
                     ctx.lineTo(verts[v].x * scale, -verts[v].y * scale);
                 }
                 ctx.closePath();
@@ -400,28 +393,28 @@ var Renderer = (function () {
     };
 
     Renderer.prototype.drawSparks = function (sparks, toX, toY, scale) {
-        var ctx = this.ctx;
-        for (var i = 0; i < sparks.length; i++) {
-            var body = sparks[i].body;
-            var color = sparks[i].color;
-            var pos = body.getPosition();
-            var angle = body.getAngle();
-            var sx = toX(pos.x);
-            var sy = toY(pos.y);
+        const ctx = this.ctx;
+        for (let i = 0; i < sparks.length; i++) {
+            const body = sparks[i].body;
+            const color = sparks[i].color;
+            const pos = body.getPosition();
+            const angle = body.getAngle();
+            const sx = toX(pos.x);
+            const sy = toY(pos.y);
 
             ctx.save();
             ctx.translate(sx, sy);
             ctx.rotate(-angle);
 
-            var fix = body.getFixtureList();
+            let fix = body.getFixtureList();
             while (fix) {
-                var shape = fix.getShape();
+                const shape = fix.getShape();
                 if (shape.m_vertices) {
-                    var verts = shape.m_vertices;
-                    ctx.fillStyle = color.replace('rgb', 'rgba').replace(')', ',0.8)');
+                    const verts = shape.m_vertices;
+                    ctx.fillStyle = color.replace('rgb', 'rgba').replace(')', ',0.6)');
                     ctx.beginPath();
                     ctx.moveTo(verts[0].x * scale, -verts[0].y * scale);
-                    for (var v = 1; v < verts.length; v++) {
+                    for (let v = 1; v < verts.length; v++) {
                         ctx.lineTo(verts[v].x * scale, -verts[v].y * scale);
                     }
                     ctx.closePath();
@@ -435,10 +428,10 @@ var Renderer = (function () {
     };
 
     function drawRotRect(ctx, toX, toY, scale, x, y, angle, hw, hh) {
-        var sx = toX(x);
-        var sy = toY(y);
-        var rw = hw * 2 * scale;
-        var rh = hh * 2 * scale;
+        const sx = toX(x);
+        const sy = toY(y);
+        const rw = hw * 2 * scale;
+        const rh = hh * 2 * scale;
 
         ctx.save();
         ctx.translate(sx, sy);

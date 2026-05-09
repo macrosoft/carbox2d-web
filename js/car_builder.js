@@ -1,4 +1,4 @@
-var CarBuilder = (function () {
+const CarBuilder = (function () {
     'use strict';
 
     const NUM_SEGMENTS = 8;

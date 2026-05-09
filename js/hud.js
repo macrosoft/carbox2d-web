@@ -1,20 +1,21 @@
-var HUD = (function () {
-    var _container = null;
-    var _scoreEl = null;
-    var _timeEl = null;
-    var _torqueEl = null;
-    var _speedEl = null;
-    var _tableBody = null;
-    var _tableContainer = null;
-    var _genEl = null;
-    var _pauseEl = null;
-    var _graphCanvas = null;
-    var _graphCtx = null;
-    var _runs = [];
-    var _copyCallback = null;
-    var _copyTimers = {};
+const HUD = (function () {
+    'use strict';
 
-    var _maxRuns = 32;
+    let _container = null;
+    let _scoreEl = null;
+    let _timeEl = null;
+    let _torqueEl = null;
+    let _speedEl = null;
+    let _tableBody = null;
+    let _genEl = null;
+    let _pauseEl = null;
+    let _graphCanvas = null;
+    let _graphCtx = null;
+    let _runs = [];
+    let _copyCallback = null;
+    let _copyTimers = {};
+
+    const _maxRuns = 32;
 
     function init() {
         _container = document.createElement('div');
@@ -54,7 +55,6 @@ var HUD = (function () {
         _torqueEl = document.getElementById('hudTorque');
         _speedEl = document.getElementById('hudSpeed');
         _tableBody = document.getElementById('hudTableBody');
-        _tableContainer = document.getElementById('hudTableContainer');
         _genEl = document.getElementById('hudGen');
         _graphCanvas = document.getElementById('hudGraph');
         if (_graphCanvas) {
@@ -66,11 +66,10 @@ var HUD = (function () {
 
 
 
-
     function formatTime(seconds) {
         seconds = Math.max(0, Math.floor(seconds));
-        var m = Math.floor(seconds / 60);
-        var s = seconds % 60;
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
         return m + ':' + (s < 10 ? '0' : '') + s;
     }
 
@@ -93,8 +92,8 @@ var HUD = (function () {
         _runs.push({ index: index, score: score, time: elapsedSec });
 
         _tableBody.innerHTML = '';
-        for (var i = 0; i < _runs.length; i++) {
-            var row = document.createElement('div');
+        for (let i = 0; i < _runs.length; i++) {
+            const row = document.createElement('div');
             row.style.fontSize = '12px';
             row.style.marginTop = '1px';
             row.style.borderTop = '1px solid rgba(0,0,0,0.15)';
@@ -111,21 +110,21 @@ var HUD = (function () {
             (function(rowIdx, rowEl) {
                 rowEl.addEventListener('mouseenter', function() {
                     rowEl.style.background = 'rgba(255,255,220,0.9)';
-                    var icon = rowEl.querySelector('.copyIcon');
+                    const icon = rowEl.querySelector('.copyIcon');
                     if (icon) icon.style.opacity = '1';
                 });
                 rowEl.addEventListener('mouseleave', function() {
                     rowEl.style.background = '';
-                    var icon = rowEl.querySelector('.copyIcon');
+                    const icon = rowEl.querySelector('.copyIcon');
                     if (icon) icon.style.opacity = '0';
                 });
                 rowEl.addEventListener('click', function(e) {
                     e.stopPropagation();
                     if (_copyCallback) {
-                        var chromo = _copyCallback(rowIdx);
+                        const chromo = _copyCallback(rowIdx);
                         if (chromo) {
                             navigator.clipboard.writeText(Chromosome.serialize(chromo)).then(function() {
-                                var icon = rowEl.querySelector('.copyIcon');
+                                const icon = rowEl.querySelector('.copyIcon');
                                 if (icon) {
                                     icon.textContent = '✓';
                                     icon.style.opacity = '1';
@@ -148,9 +147,9 @@ var HUD = (function () {
 
     function showResults(indexed) {
         _tableBody.innerHTML = '';
-        var styleId = 'hudHighlightStyle';
+        const styleId = 'hudHighlightStyle';
         if (!document.getElementById(styleId)) {
-            var styleEl = document.createElement('style');
+            const styleEl = document.createElement('style');
             styleEl.id = styleId;
             styleEl.textContent =
                 '.hudRowWinner{color:green!important;}' +
@@ -158,9 +157,9 @@ var HUD = (function () {
             document.head.appendChild(styleEl);
         }
 
-        for (var i = 0; i < indexed.length; i++) {
-            var item = indexed[i];
-            var row = document.createElement('div');
+        for (let i = 0; i < indexed.length; i++) {
+            const item = indexed[i];
+            const row = document.createElement('div');
             row.style.fontSize = '12px';
             row.style.marginTop = '1px';
             row.style.borderTop = '1px solid rgba(0,0,0,0.15)';
@@ -200,29 +199,29 @@ var HUD = (function () {
 
     function drawGraphs(avgScores, maxScores) {
         if (!_graphCtx) return;
-        var ctx = _graphCtx;
-        var w = _graphCanvas.width;
-        var h = _graphCanvas.height;
+        const ctx = _graphCtx;
+        const w = _graphCanvas.width;
+        const h = _graphCanvas.height;
 
         ctx.clearRect(0, 0, w, h);
 
         if (avgScores.length < 2) return;
 
-        var maxVal = 0;
-        for (var i = 0; i < maxScores.length; i++) {
+        let maxVal = 0;
+        for (let i = 0; i < maxScores.length; i++) {
             if (maxScores[i] > maxVal) maxVal = maxScores[i];
         }
         if (maxVal === 0) maxVal = 1;
 
-        var stepX = w / Math.max(1, avgScores.length - 1);
+        const stepX = w / Math.max(1, avgScores.length - 1);
         ctx.lineWidth = 2;
 
         function drawLine(data, color) {
             ctx.beginPath();
             ctx.strokeStyle = color;
-            for (var i = 0; i < data.length; i++) {
-                var x = i * stepX;
-                var y = h - (data[i] / maxVal) * h;
+            for (let i = 0; i < data.length; i++) {
+                const x = i * stepX;
+                const y = h - (data[i] / maxVal) * h;
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }

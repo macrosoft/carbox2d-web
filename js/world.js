@@ -1,4 +1,4 @@
-var World = (function () {
+const World = (function () {
     'use strict';
 
     const NUM_SEGMENTS = 8;

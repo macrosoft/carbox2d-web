@@ -1,27 +1,28 @@
-var Chromosome = (function () {
-    var NUM_SEGMENTS = 8;
-    var GENES_SIZE = 40;
-    var COLORS_SIZE = 48;
+const Chromosome = (function () {
+    'use strict';
+
+    const NUM_SEGMENTS = 8;
+    const GENES_SIZE = 40;
 
     function generate() {
-        var genes = new Float32Array(GENES_SIZE);
+        const genes = new Float32Array(GENES_SIZE);
 
-        for (var i = 0; i < NUM_SEGMENTS; i++) {
+        for (let i = 0; i < NUM_SEGMENTS; i++) {
             genes[i * 2] = Math.random();
             genes[i * 2 + 1] = Math.random();
         }
 
-        for (var i = 0; i < NUM_SEGMENTS; i++) {
+        for (let i = 0; i < NUM_SEGMENTS; i++) {
             genes[16 + i * 3] = Math.random();
             genes[16 + i * 3 + 1] = Math.random();
             genes[16 + i * 3 + 2] = Math.random();
         }
 
-        var r = Math.floor(Math.random() * 256);
-        var g = Math.floor(Math.random() * 256);
-        var b = Math.floor(Math.random() * 256);
-        var colors = [];
-        for (var i = 0; i < 16; i++) {
+        const r = Math.floor(Math.random() * 256);
+        const g = Math.floor(Math.random() * 256);
+        const b = Math.floor(Math.random() * 256);
+        const colors = [];
+        for (let i = 0; i < 16; i++) {
             colors.push([r, g, b]);
         }
 
@@ -45,31 +46,31 @@ var Chromosome = (function () {
     }
 
     function swapColors(srcColors, dstColors, ci) {
-        for (var c = 0; c < 3; c++) {
+        for (let c = 0; c < 3; c++) {
             dstColors[ci][c] = srcColors[ci][c];
         }
     }
 
     function crossover(parentA, parentB) {
-        var bend0 = Math.floor(Math.random() * GENES_SIZE);
-        var bend1 = Math.floor(Math.random() * GENES_SIZE);
+        let bend0 = Math.floor(Math.random() * GENES_SIZE);
+        let bend1 = Math.floor(Math.random() * GENES_SIZE);
         if (bend0 > bend1) {
-            var tmp = bend0;
+            const tmp = bend0;
             bend0 = bend1;
             bend1 = tmp;
         }
 
-        var genesA = new Float32Array(GENES_SIZE);
-        var genesB = new Float32Array(GENES_SIZE);
-        var colorsA = [];
-        var colorsB = [];
-        for (var i = 0; i < 16; i++) {
+        const genesA = new Float32Array(GENES_SIZE);
+        const genesB = new Float32Array(GENES_SIZE);
+        const colorsA = [];
+        const colorsB = [];
+        for (let i = 0; i < 16; i++) {
             colorsA.push([0, 0, 0]);
             colorsB.push([0, 0, 0]);
         }
 
-        for (var i = 0; i < GENES_SIZE; i++) {
-            var srcA, srcB;
+        for (let i = 0; i < GENES_SIZE; i++) {
+            let srcA, srcB;
             if (i >= bend0 && i <= bend1) {
                 genesA[i] = parentB.genes[i];
                 genesB[i] = parentA.genes[i];
@@ -82,7 +83,7 @@ var Chromosome = (function () {
                 srcB = parentB.colors;
             }
 
-            var ci = geneToColorIndex(i);
+            const ci = geneToColorIndex(i);
             if (ci >= 0) {
                 swapColors(srcA, colorsA, ci);
                 swapColors(srcB, colorsB, ci);
@@ -96,51 +97,51 @@ var Chromosome = (function () {
     }
 
     function clone(chromo) {
-        var genes = new Float32Array(GENES_SIZE);
+        const genes = new Float32Array(GENES_SIZE);
         genes.set(chromo.genes);
-        var colors = [];
-        for (var i = 0; i < 16; i++) {
+        const colors = [];
+        for (let i = 0; i < 16; i++) {
             colors.push([chromo.colors[i][0], chromo.colors[i][1], chromo.colors[i][2]]);
         }
         return { genes: genes, colors: colors };
     }
 
     function encodeFloat32(arr) {
-        var bytes = new Uint8Array(arr.buffer);
-        var binary = '';
-        for (var i = 0; i < bytes.length; i++) {
+        const bytes = new Uint8Array(arr.buffer);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) {
             binary += String.fromCharCode(bytes[i]);
         }
         return btoa(binary);
     }
 
     function decodeFloat32(base64, target) {
-        var binary = atob(base64);
-        var bytes = new Uint8Array(binary.length);
-        for (var i = 0; i < binary.length; i++) {
+        const binary = atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) {
             bytes[i] = binary.charCodeAt(i);
         }
         target.set(new Float32Array(bytes.buffer));
     }
 
     function encodeColors(colors) {
-        var out = [];
-        for (var i = 0; i < colors.length; i++) {
-            var r = colors[i][0].toString(16).padStart(2, '0');
-            var g = colors[i][1].toString(16).padStart(2, '0');
-            var b = colors[i][2].toString(16).padStart(2, '0');
+        const out = [];
+        for (let i = 0; i < colors.length; i++) {
+            const r = colors[i][0].toString(16).padStart(2, '0');
+            const g = colors[i][1].toString(16).padStart(2, '0');
+            const b = colors[i][2].toString(16).padStart(2, '0');
             out.push(r + g + b);
         }
         return out.join('');
     }
 
     function decodeColors(str) {
-        var out = [];
-        for (var i = 0; i < 16; i++) {
-            var hex = str.substring(i * 6, i * 6 + 6);
-            var r = parseInt(hex.substring(0, 2), 16);
-            var g = parseInt(hex.substring(2, 4), 16);
-            var b = parseInt(hex.substring(4, 6), 16);
+        const out = [];
+        for (let i = 0; i < 16; i++) {
+            const hex = str.substring(i * 6, i * 6 + 6);
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
             out.push([r, g, b]);
         }
         return out;
@@ -154,8 +155,8 @@ var Chromosome = (function () {
     }
 
     function deserialize(str) {
-        var data = JSON.parse(str);
-        var genes = new Float32Array(40);
+        const data = JSON.parse(str);
+        const genes = new Float32Array(GENES_SIZE);
         decodeFloat32(data.g, genes);
         return { genes: genes, colors: decodeColors(data.c) };
     }

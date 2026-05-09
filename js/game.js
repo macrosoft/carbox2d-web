@@ -1,13 +1,14 @@
 (function () {
+    'use strict';
 
-    var canvas = document.getElementById('gameCanvas');
-    var renderer = new Renderer.Renderer(canvas);
+    const canvas = document.getElementById('gameCanvas');
+    const renderer = new Renderer.Renderer(canvas);
 
     window.addEventListener('resize', function () {
         renderer.resize();
     });
 
-    var _paused = false;
+    let _paused = false;
     window.addEventListener('keydown', function (e) {
         if (e.code === 'Space') {
             e.preventDefault();
@@ -15,19 +16,19 @@
         }
     });
 
-    var POPULATION_SIZE = 32;
-    var _population = [];
-    var _results = [];
-    var _carIndex = 0;
-    var _generation = 0;
-    var _avgScores = [0];
-    var _maxScores = [0];
-    var _prevIndexed = [];
+    const POPULATION_SIZE = 32;
+    let _population = [];
+    let _results = [];
+    let _carIndex = 0;
+    let _generation = 0;
+    let _avgScores = [0];
+    let _maxScores = [0];
+    let _prevIndexed = [];
 
     function shuffle(arr) {
-        for (var q = arr.length - 1; q > 0; q--) {
-            var swapIdx = Math.floor(Math.random() * (q + 1));
-            var tmp = arr[q];
+        for (let q = arr.length - 1; q > 0; q--) {
+            const swapIdx = Math.floor(Math.random() * (q + 1));
+            const tmp = arr[q];
             arr[q] = arr[swapIdx];
             arr[swapIdx] = tmp;
         }
@@ -35,9 +36,9 @@
     }
 
     function calcStats(results) {
-        var totalScore = 0;
-        var maxScore = 0;
-        for (var r = 0; r < results.length; r++) {
+        let totalScore = 0;
+        let maxScore = 0;
+        for (let r = 0; r < results.length; r++) {
             totalScore += results[r].score;
             if (results[r].score > maxScore) maxScore = results[r].score;
         }
@@ -54,14 +55,14 @@
         _prevIndexed = [];
 
         if (_generation === 0) {
-            for (var i = 0; i < POPULATION_SIZE; i++) {
-                var chromo = Chromosome.generate();
+            for (let i = 0; i < POPULATION_SIZE; i++) {
+                const chromo = Chromosome.generate();
                 chromo.parents = null;
                 _population.push(chromo);
             }
         } else {
-            var indexed = [];
-            for (var k = 0; k < POPULATION_SIZE; k++) {
+            const indexed = [];
+            for (let k = 0; k < POPULATION_SIZE; k++) {
                 indexed.push({ chromo: prevPopulation[k], score: prevResults[k].score, time: prevResults[k].time });
             }
             indexed.sort(function (a, b) {
@@ -69,23 +70,23 @@
                 return a.time - b.time;
             });
 
-            var parentSet = new Set();
+            const parentSet = new Set();
             parentSet.add(0);
 
-            var indices = [];
-            for (var p = 0; p < POPULATION_SIZE; p++) {
+            const indices = [];
+            for (let p = 0; p < POPULATION_SIZE; p++) {
                 indices.push(p);
             }
             shuffle(indices);
 
-            for (var pair = 0; pair < 14; pair++) {
-                var idxA = indices[pair * 2];
-                var idxB = indices[pair * 2 + 1];
+            for (let pair = 0; pair < 14; pair++) {
+                const idxA = indices[pair * 2];
+                const idxB = indices[pair * 2 + 1];
                 parentSet.add(idxA);
                 parentSet.add(idxB);
             }
 
-            for (var m = 0; m < indexed.length; m++) {
+            for (let m = 0; m < indexed.length; m++) {
                 indexed[m].hasOffspring = parentSet.has(m);
             }
 
@@ -94,16 +95,16 @@
             _population.push(Chromosome.clone(indexed[0].chromo));
             _population[_population.length - 1].parents = [indexed[0].chromo];
 
-            for (var n = 0; n < 3; n++) {
-                var chromo = Chromosome.generate();
+            for (let n = 0; n < 3; n++) {
+                const chromo = Chromosome.generate();
                 chromo.parents = null;
                 _population.push(chromo);
             }
 
-            for (var pair = 0; pair < 14; pair++) {
-                var pa = indexed[indices[pair * 2]].chromo;
-                var pb = indexed[indices[pair * 2 + 1]].chromo;
-                var result = Chromosome.crossover(pa, pb);
+            for (let pair = 0; pair < 14; pair++) {
+                const pa = indexed[indices[pair * 2]].chromo;
+                const pb = indexed[indices[pair * 2 + 1]].chromo;
+                const result = Chromosome.crossover(pa, pb);
                 result.offspringA.parents = [pa, pb];
                 result.offspringB.parents = [pa, pb];
                 _population.push(result.offspringA);
@@ -115,7 +116,7 @@
     }
 
     function finishGeneration() {
-        var stats = calcStats(_results);
+        const stats = calcStats(_results);
         _avgScores.push(stats.avg);
         _maxScores.push(stats.max);
         _generation++;
@@ -134,15 +135,15 @@
         Renderer.setTrackData(track);
 
         startGeneration();
-        var world = new World.World(_population[0]);
+        let world = new World.World(_population[0]);
         renderer.setCamera(world.getChassisPos().x, world.getChassisPos().y + CAMERA_Y_OFFSET);
 
-        var lastTick = null;
-        var accumulator = 0;
+        let lastTick = null;
+        let accumulator = 0;
 
         function frame(timestamp) {
             if (lastTick === null) lastTick = timestamp;
-            var dt = (timestamp - lastTick) / 1000;
+            const dt = (timestamp - lastTick) / 1000;
             lastTick = timestamp;
 
             if (dt > 0.1) dt = 0.1;
@@ -173,7 +174,7 @@
                 }
             }
 
-            var pos = world.getChassisPos();
+            const pos = world.getChassisPos();
             renderer.follow(pos.x, pos.y);
             renderer.draw(world.chassis, world.chromo.parents, world.sparks);
             HUD.update(world);
