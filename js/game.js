@@ -175,7 +175,7 @@
 
             var pos = world.getChassisPos();
             renderer.follow(pos.x, pos.y);
-            renderer.draw(world.chassis, world.chromo.parents);
+            renderer.draw(world.chassis, world.chromo.parents, world.sparks);
             HUD.update(world);
             HUD.updateGeneration(_generation, _carIndex);
             HUD.drawGraphs(_avgScores, _maxScores);

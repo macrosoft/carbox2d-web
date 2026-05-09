@@ -254,6 +254,8 @@ var World = (function () {
         this.stopped = false;
 
         this.torque = calcTorque(this.chassis);
+        this.sparks = [];
+        this.sparkList = [];
     }
 
     World.prototype.reset = function (newChromo) {
@@ -267,6 +269,8 @@ var World = (function () {
         this.prevDist = 0;
         this.stopped = false;
         this.torque = calcTorque(this.chassis);
+        this.sparks = [];
+        this.sparkList = [];
     };
 
     function getFixtureMass(fixture) {
@@ -280,25 +284,42 @@ var World = (function () {
             const fixture = fb === 0 ? contact.getFixtureA() : contact.getFixtureB();
             const maxImpulse = Math.max(...impulse.normalImpulses);
 
+            let fixtureColor = null;
+
             const segIdx = fixture.segmentIndex;
             if (segIdx !== undefined && segIdx !== null) {
+                fixtureColor = this.chassis.colors ? this.chassis.colors[segIdx] : null;
+
                 if (this.chassis.segFixtures[segIdx]) {
                     const mass = getFixtureMass(fixture);
                     const strength = BREAK_STRENGTH * mass;
                     if (strength < maxImpulse) {
                         this.chassis.segmentBreakFlags[segIdx] = true;
-                        return;
                     }
                 }
             }
 
             const wheelIdx = fixture.axleMount || fixture.axleBodyFixture ? fixture.wheelIndex : -1;
             if (wheelIdx !== -1) {
+                fixtureColor = this.chassis.axleColors ? this.chassis.axleColors[wheelIdx] : null;
+
                 const mass = getFixtureMass(fixture);
                 const strength = BREAK_STRENGTH * mass;
                 if (strength < maxImpulse) {
                     this.chassis.axleBreakFlags[wheelIdx] = true;
-                    return;
+                }
+            }
+
+            if (fixtureColor) {
+                const wm = contact.getWorldManifold();
+                if (wm && wm.points) {
+                    for (let i = 0; i < wm.pointCount; i++) {
+                        this.addSparksList(
+                            impulse.normalImpulses[i] || maxImpulse,
+                            wm.points[i],
+                            fixtureColor
+                        );
+                    }
                 }
             }
         }
@@ -345,6 +366,59 @@ var World = (function () {
     World.prototype.recalcTorque = function () {
         const activeWheels = this.chassis.wheelActive.filter(a => a).length;
         this.torque = this.chassis.getMass() * MASS_MULT / Math.pow(2, Math.max(activeWheels - 1, 0));
+    };
+
+    World.prototype.addSparksList = function (impulses, pos, color) {
+        if (impulses > SPARK_IMPULSE_THRESHOLD) {
+            const count = Math.min(Math.floor(impulses / 4), 32);
+            this.sparkList.push({ count, pos: planck.Vec2(pos.x, pos.y), color });
+        }
+    };
+
+    World.prototype.updateSparks = function () {
+        const world = this.world;
+
+        while (this.sparkList.length > 0) {
+            const entry = this.sparkList.shift();
+            for (let i = 0; i < entry.count; i++) {
+                if (this.sparks.length >= MAX_SPARK_COUNT) continue;
+
+                const hw = Math.random() / 30 + 0.02;
+                const hh = Math.random() / 30 + 0.02;
+
+                const body = world.createBody({
+                    type: 'dynamic',
+                    position: entry.pos,
+                    allowSleep: false,
+                    bullet: true
+                });
+                body.createFixture(new planck.BoxShape(hw, hh), {
+                    density: 0.5,
+                    restitution: 0.7,
+                    filterCategoryBits: 0x0003,
+                    filterMaskBits: 0x0002,
+                    filterGroupIndex: -1
+                });
+
+                const speed = Math.max(3.0, this.getSpeed());
+                const vx = (Math.random() * 0.75 + 0.25) * speed * 2 - speed;
+                const vy = (Math.random() * 0.75 + 0.25) * speed;
+                body.setLinearVelocity(planck.Vec2(vx, vy));
+
+                this.sparks.push({ body, color: entry.color });
+            }
+        }
+
+        let i = 0;
+        while (i < this.sparks.length) {
+            const vel = this.sparks[i].body.getLinearVelocity();
+            if (Math.abs(vel.x) < 0.01 && Math.abs(vel.y) < 0.01) {
+                world.destroyBody(this.sparks[i].body);
+                this.sparks.splice(i, 1);
+                continue;
+            }
+            i++;
+        }
     };
 
     World.prototype.breakSegment = function (i) {
@@ -421,6 +495,7 @@ var World = (function () {
 
         this.world.step(TIME_STEP, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
         this.processBreakage();
+        this.updateSparks();
 
         this.iteration++;
         const pos = this.chassis.getPosition();

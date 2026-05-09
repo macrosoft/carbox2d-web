@@ -131,7 +131,7 @@ var Renderer = (function () {
         ctx.restore();
     };
 
-    Renderer.prototype.draw = function (chassis, parentChromos) {
+    Renderer.prototype.draw = function (chassis, parentChromos, sparks) {
         this.resize();
         this.updateCamera();
 
@@ -191,6 +191,11 @@ var Renderer = (function () {
         // Chassis
         if (chassis) {
             this.drawChassis(chassis, toX, toY, scale);
+        }
+
+        // Sparks
+        if (sparks) {
+            this.drawSparks(sparks, toX, toY, scale);
         }
 
         if (parentChromos && parentChromos.length > 0) {
@@ -392,6 +397,41 @@ var Renderer = (function () {
         }
 
         ctx.restore();
+    };
+
+    Renderer.prototype.drawSparks = function (sparks, toX, toY, scale) {
+        var ctx = this.ctx;
+        for (var i = 0; i < sparks.length; i++) {
+            var body = sparks[i].body;
+            var color = sparks[i].color;
+            var pos = body.getPosition();
+            var angle = body.getAngle();
+            var sx = toX(pos.x);
+            var sy = toY(pos.y);
+
+            ctx.save();
+            ctx.translate(sx, sy);
+            ctx.rotate(-angle);
+
+            var fix = body.getFixtureList();
+            while (fix) {
+                var shape = fix.getShape();
+                if (shape.m_vertices) {
+                    var verts = shape.m_vertices;
+                    ctx.fillStyle = color.replace('rgb', 'rgba').replace(')', ',0.8)');
+                    ctx.beginPath();
+                    ctx.moveTo(verts[0].x * scale, -verts[0].y * scale);
+                    for (var v = 1; v < verts.length; v++) {
+                        ctx.lineTo(verts[v].x * scale, -verts[v].y * scale);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                fix = fix.getNext();
+            }
+
+            ctx.restore();
+        }
     };
 
     function drawRotRect(ctx, toX, toY, scale, x, y, angle, hw, hh) {

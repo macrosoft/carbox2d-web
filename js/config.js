@@ -14,5 +14,7 @@ const CAMERA_Y_OFFSET = 2;
 const MASS_MULT = 20; // torque scaling
 const TRACK_HALF_W = 2;
 const BREAK_STRENGTH = 50; // impulse threshold for breakage
+const MAX_SPARK_COUNT = 512;
+const SPARK_IMPULSE_THRESHOLD = 32;
 
 // Track data: loaded asynchronously from js/track_data.bin via TrackLoader
