@@ -26,6 +26,16 @@
         themeBtn.innerHTML = Theme.isDark() ? SUN_ICON : MOON_ICON;
     });
 
+    const pasteBtn = document.getElementById('pasteBtn');
+    pasteBtn.addEventListener('click', async function () {
+        try {
+            const text = await navigator.clipboard.readText();
+            const chromo = Chromosome.deserialize(text);
+            const targetIdx = _carIndex + 1 < POPULATION_SIZE ? _carIndex + 1 : _carIndex;
+            _population[targetIdx] = chromo;
+        } catch (_) {}
+    });
+
     let _population = [];
     let _results = [];
     let _carIndex = 0;
