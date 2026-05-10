@@ -3,6 +3,7 @@ const World = (function () {
 
     const CAR_FILTER = { filterCategoryBits: 0x0001, filterMaskBits: 0x0002 | 0x0004, filterGroupIndex: -1 };
     const DEBRIS_FILTER = { filterCategoryBits: 0x0004, filterMaskBits: 0x0001 | 0x0002 | 0x0004 };
+    const DEBRIS_PENDING_FILTER = { filterCategoryBits: 0x0004, filterMaskBits: 0x0002 | 0x0004 };
     const TRACK_FILTER = { filterCategoryBits: 0x0002, filterMaskBits: 0x0001 | 0x0004 };
     const START_POS_X = -500;
     const DROP_CLEARANCE = 2.0;
@@ -256,6 +257,7 @@ const World = (function () {
         this.torque = calcTorque(this.chassis);
         this.sparks = [];
         this.sparkList = [];
+        this.debrisPending = [];
     }
 
     World.prototype.reset = function (newChromo) {
@@ -272,6 +274,7 @@ const World = (function () {
         this.torque = calcTorque(this.chassis);
         this.sparks = [];
         this.sparkList = [];
+        this.debrisPending = [];
     };
 
     function getFixtureMass(fixture) {
@@ -343,14 +346,16 @@ const World = (function () {
         const slot = chassis.axleShapeSlots[i];
         if (slot) {
             slot.body.destroyFixture(slot.fixture);
-            slot.body.createFixture(
+            const axleDebrisFixt = slot.body.createFixture(
                 new planck.BoxShape(AXLE_BOX_HW, AXLE_BOX_HH, AXLE_BOX_OFFSET, 0),
-                { density: 20, friction: TRACK_FRICTION, restitution: 0.05, ...DEBRIS_FILTER }
+                { density: 20, friction: TRACK_FRICTION, restitution: 0.05, ...DEBRIS_PENDING_FILTER }
             );
-            slot.body.createFixture(
+            const mountDebrisFixt = slot.body.createFixture(
                 new planck.BoxShape(MOUNT_BOX_HW, MOUNT_BOX_HH, planck.Vec2(0, 0), 0),
-                { density: 2, friction: TRACK_FRICTION, restitution: 0.05, ...DEBRIS_FILTER }
+                { density: 2, friction: TRACK_FRICTION, restitution: 0.05, ...DEBRIS_PENDING_FILTER }
             );
+            this.debrisPending.push({ fixture: axleDebrisFixt, body: slot.body, nextStep: 0 });
+            this.debrisPending.push({ fixture: mountDebrisFixt, body: slot.body, nextStep: 0 });
         }
 
         const wheel = chassis.wheels[i];
@@ -441,7 +446,8 @@ const World = (function () {
             angle: angle,
             allowSleep: false
         });
-        debrisBody.createFixture(shape, { density: 2, friction: TRACK_FRICTION, restitution: 0.05, ...DEBRIS_FILTER });
+        const debrisFixt = debrisBody.createFixture(shape, { density: 2, friction: TRACK_FRICTION, restitution: 0.05, ...DEBRIS_PENDING_FILTER });
+        this.debrisPending.push({ fixture: debrisFixt, body: debrisBody, nextStep: 0 });
         debrisBody.setLinearVelocity(vel);
 
         chassis.debris.push({ body: debrisBody, color: chassis.colors[i] });
@@ -475,6 +481,47 @@ const World = (function () {
         }
     };
 
+    function aabbOverlap(a, b) {
+        return a.lowerBound.x < b.upperBound.x
+            && a.upperBound.x > b.lowerBound.x
+            && a.lowerBound.y < b.upperBound.y
+            && a.upperBound.y > b.lowerBound.y;
+    }
+
+    World.prototype.processPendingDebris = function () {
+        const chassis = this.chassis;
+        for (let d = this.debrisPending.length - 1; d >= 0; d--) {
+            const entry = this.debrisPending[d];
+            if (this.iteration < entry.nextStep) continue;
+            entry.nextStep = this.iteration + 15;
+
+            const pendingAABB = entry.fixture.getAABB(0);
+            let overlap = false;
+            for (let i = 0; i < NUM_SEGMENTS; i++) {
+                const sf = chassis.segFixtures[i];
+                if (!sf) continue;
+                if (aabbOverlap(pendingAABB, sf.getAABB(0))) {
+                    overlap = true;
+                    break;
+                }
+            }
+            if (!overlap) {
+                for (let i = 0; i < chassis.mountFixtures.length; i++) {
+                    const mf = chassis.mountFixtures[i];
+                    if (!mf) continue;
+                    if (aabbOverlap(pendingAABB, mf.getAABB(0))) {
+                        overlap = true;
+                        break;
+                    }
+                }
+            }
+            if (!overlap) {
+                entry.fixture.setFilterData({ categoryBits: 0x0004, maskBits: 0x0001 | 0x0002 | 0x0004, groupIndex: 0 });
+                this.debrisPending.splice(d, 1);
+            }
+        }
+    };
+
     World.prototype.step = function () {
         for (let i = 0; i < this.chassis.wheels.length; i++) {
             const wheel = this.chassis.wheels[i];
@@ -494,6 +541,7 @@ const World = (function () {
 
         this.world.step(TIME_STEP, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
         this.processBreakage();
+        this.processPendingDebris();
         this.updateSparks();
 
         this.iteration++;
