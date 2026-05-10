@@ -1,8 +1,9 @@
 const World = (function () {
     'use strict';
 
-    const CAR_FILTER = { filterCategoryBits: 0x0001, filterMaskBits: 0x0002, filterGroupIndex: -1 };
-    const TRACK_FILTER = { filterCategoryBits: 0x0002, filterMaskBits: 0x0001 };
+    const CAR_FILTER = { filterCategoryBits: 0x0001, filterMaskBits: 0x0002 | 0x0004, filterGroupIndex: -1 };
+    const DEBRIS_FILTER = { filterCategoryBits: 0x0004, filterMaskBits: 0x0001 | 0x0002 | 0x0004 };
+    const TRACK_FILTER = { filterCategoryBits: 0x0002, filterMaskBits: 0x0001 | 0x0004 };
     const START_POS_X = -500;
     const DROP_CLEARANCE = 2.0;
     const MOTOR_SPEED = -6 * Math.PI;
@@ -18,7 +19,6 @@ const World = (function () {
     const MOUNT_BOX_HH = 0.1;
     const AXLE_BOX_HW = 0.2;
     const AXLE_BOX_HH = 0.05;
-    const BROKEN_MASK = 0x0003;
     const SLOW_THRESHOLD_X = 1;
     const MAX_SLOW_NEAR = 300;
     const MAX_SLOW_FAR = 180;
@@ -345,13 +345,11 @@ const World = (function () {
             slot.body.destroyFixture(slot.fixture);
             slot.body.createFixture(
                 new planck.BoxShape(AXLE_BOX_HW, AXLE_BOX_HH, AXLE_BOX_OFFSET, 0),
-                { density: 20, friction: TRACK_FRICTION, restitution: 0.05,
-                  filterCategoryBits: CAR_FILTER.filterCategoryBits, filterMaskBits: BROKEN_MASK }
+                { density: 20, friction: TRACK_FRICTION, restitution: 0.05, ...DEBRIS_FILTER }
             );
             slot.body.createFixture(
                 new planck.BoxShape(MOUNT_BOX_HW, MOUNT_BOX_HH, planck.Vec2(0, 0), 0),
-                { density: 2, friction: TRACK_FRICTION, restitution: 0.05,
-                  filterCategoryBits: CAR_FILTER.filterCategoryBits, filterMaskBits: BROKEN_MASK }
+                { density: 2, friction: TRACK_FRICTION, restitution: 0.05, ...DEBRIS_FILTER }
             );
         }
 
@@ -443,7 +441,7 @@ const World = (function () {
             angle: angle,
             allowSleep: false
         });
-        debrisBody.createFixture(shape, { density: 2, friction: TRACK_FRICTION, restitution: 0.05, ...CAR_FILTER });
+        debrisBody.createFixture(shape, { density: 2, friction: TRACK_FRICTION, restitution: 0.05, ...DEBRIS_FILTER });
         debrisBody.setLinearVelocity(vel);
 
         chassis.debris.push({ body: debrisBody, color: chassis.colors[i] });

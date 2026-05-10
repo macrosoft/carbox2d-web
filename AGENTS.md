@@ -36,6 +36,7 @@ Decoded via `CarBuilder.decodeChromosome()`:
 - Wheels: `RevoluteJoint` with motor.
 - Breakage: `post-solve` impulse check on fixtures. Threshold: `BREAK_STRENGTH * fixtureMass`.
 - Stop conditions: stall, track end (1500m), time limit (5min), backward roll, destroyed (7 segments broken).
+- Collision filters (world.js): `CAR_FILTER` (cat `0x0001`, mask `0x0002\|0x0004`, group `-1`), `DEBRIS_FILTER` (cat `0x0004`, mask `0x0001\|0x0002\|0x0004`), `TRACK_FILTER` (cat `0x0002`, mask `0x0001\|0x0004`). Group `-1` disables car self-collision; debris (broken segments, axles) use `DEBRIS_FILTER` to collide with everything.
 
 ## Population
 - POPULATION_SIZE = 32.
