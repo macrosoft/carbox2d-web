@@ -258,6 +258,7 @@ const World = (function () {
         this.sparks = [];
         this.sparkList = [];
         this.debrisPending = [];
+        this.prng = PRNG.create(PRNG.hashChromosome(this.chromo.genes));
     }
 
     World.prototype.reset = function (newChromo) {
@@ -275,6 +276,7 @@ const World = (function () {
         this.sparks = [];
         this.sparkList = [];
         this.debrisPending = [];
+        this.prng = PRNG.create(PRNG.hashChromosome(this.chromo.genes));
     };
 
     function getFixtureMass(fixture) {
@@ -381,14 +383,15 @@ const World = (function () {
 
     World.prototype.updateSparks = function () {
         const world = this.world;
+        const prng = this.prng;
 
         while (this.sparkList.length > 0) {
             const entry = this.sparkList.shift();
             for (let i = 0; i < entry.count; i++) {
                 if (this.sparks.length >= MAX_SPARK_COUNT) continue;
 
-                const hw = Math.random() / 30 + 0.02;
-                const hh = Math.random() / 30 + 0.02;
+                const hw = prng.next() / 30 + 0.02;
+                const hh = prng.next() / 30 + 0.02;
 
                 const body = world.createBody({
                     type: 'dynamic',
@@ -405,8 +408,8 @@ const World = (function () {
                 });
 
                 const speed = Math.max(3.0, this.getSpeed());
-                const vx = (Math.random() * 0.75 + 0.25) * speed * 2 - speed;
-                const vy = (Math.random() * 0.75 + 0.25) * speed;
+                const vx = (prng.next() * 0.75 + 0.25) * speed * 2 - speed;
+                const vy = (prng.next() * 0.75 + 0.25) * speed;
                 body.setLinearVelocity(planck.Vec2(vx, vy));
 
                 this.sparks.push({ body, color: entry.color });
