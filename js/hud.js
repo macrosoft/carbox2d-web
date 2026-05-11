@@ -168,7 +168,7 @@ const HUD = (function () {
         for (let i = 0; i < indexed.length; i++) {
             const item = indexed[i];
             let cls = null;
-            if (i === 0) {
+            if (i < 4) {
                 cls = 'hudRowWinner';
             } else if (!item.hasOffspring) {
                 cls = 'hudRowLoser';

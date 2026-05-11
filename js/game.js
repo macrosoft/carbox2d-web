@@ -96,19 +96,21 @@
             });
 
             const parentSet = new Set();
-            parentSet.add(0);
+            for (let t = 0; t < TOP_CROSS_COUNT; t++) parentSet.add(t);
 
-            const indices = [];
-            for (let p = 0; p < POPULATION_SIZE; p++) {
-                indices.push(p);
+            const massIndices = [];
+            for (let p = TOP_CROSS_COUNT; p < POPULATION_SIZE; p++) {
+                massIndices.push(p);
             }
-            shuffle(indices);
+            shuffle(massIndices);
 
-            for (let pair = 0; pair < CROSSOVER_PAIRS; pair++) {
-                const idxA = indices[pair * 2];
-                const idxB = indices[pair * 2 + 1];
-                parentSet.add(idxA);
-                parentSet.add(idxB);
+            for (let t = 0; t < TOP_CROSS_COUNT; t++) parentSet.add(massIndices[t]);
+
+            const remainingIndices = massIndices.slice(TOP_CROSS_COUNT);
+            shuffle(remainingIndices);
+            for (let pair = 0; pair < REMAINING_PAIRS; pair++) {
+                parentSet.add(remainingIndices[pair * 2]);
+                parentSet.add(remainingIndices[pair * 2 + 1]);
             }
 
             for (let m = 0; m < indexed.length; m++) {
@@ -126,9 +128,19 @@
                 _population.push(chromo);
             }
 
-            for (let pair = 0; pair < CROSSOVER_PAIRS; pair++) {
-                const pa = indexed[indices[pair * 2]].chromo;
-                const pb = indexed[indices[pair * 2 + 1]].chromo;
+            for (let t = 0; t < TOP_CROSS_COUNT; t++) {
+                const pa = indexed[t].chromo;
+                const pb = indexed[massIndices[t]].chromo;
+                const result = Chromosome.crossover(pa, pb);
+                result.offspringA.parents = [pa, pb];
+                result.offspringB.parents = [pa, pb];
+                _population.push(result.offspringA);
+                _population.push(result.offspringB);
+            }
+
+            for (let pair = 0; pair < REMAINING_PAIRS; pair++) {
+                const pa = indexed[remainingIndices[pair * 2]].chromo;
+                const pb = indexed[remainingIndices[pair * 2 + 1]].chromo;
                 const result = Chromosome.crossover(pa, pb);
                 result.offspringA.parents = [pa, pb];
                 result.offspringB.parents = [pa, pb];

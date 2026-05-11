@@ -36,7 +36,9 @@ const RGBA_ALPHA = 0.6;
 const POPULATION_SIZE = 32;
 const ELITE_COUNT = 1;
 const RANDOM_COUNT = 3;
-const CROSSOVER_PAIRS = (POPULATION_SIZE - ELITE_COUNT - RANDOM_COUNT) / 2; // = 14
+const CROSSOVER_PAIRS = (POPULATION_SIZE - ELITE_COUNT - RANDOM_COUNT) / 2; // = 14 (unused, kept for reference)
+const TOP_CROSS_COUNT = 4;
+const REMAINING_PAIRS = (POPULATION_SIZE - ELITE_COUNT - RANDOM_COUNT - TOP_CROSS_COUNT * 2) / 2; // = 10
 const MAX_DT = 0.1;
 
 // Chromosome encoding
