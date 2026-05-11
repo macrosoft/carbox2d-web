@@ -586,6 +586,21 @@ const World = (function () {
         return Math.sqrt(v.x * v.x + v.y * v.y);
     };
 
+    World.prototype.getMass = function () {
+        let total = this.chassis.getMass();
+        for (let i = 0; i < this.chassis.axles.length; i++) {
+            if (this.chassis.axles[i] && this.chassis.wheelActive[i]) {
+                total += this.chassis.axles[i].getMass();
+            }
+        }
+        for (let i = 0; i < this.chassis.wheels.length; i++) {
+            if (this.chassis.wheels[i] && this.chassis.wheelActive[i]) {
+                total += this.chassis.wheels[i].body.getMass();
+            }
+        }
+        return total;
+    };
+
     World.prototype.getTorque = function () {
         return this.torque;
     };

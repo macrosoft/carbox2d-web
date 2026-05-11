@@ -6,6 +6,7 @@ const HUD = (function () {
     let _timeEl = null;
     let _torqueEl = null;
     let _speedEl = null;
+    let _massEl = null;
     let _tableBody = null;
     let _genEl = null;
     let _pauseEl = null;
@@ -40,6 +41,7 @@ const HUD = (function () {
             '<div style="position:absolute;top:40px;right:12px;font-size:14px;color:red;text-align:right;text-shadow:1px 1px 2px rgba(0,0,0,0.3);">' +
             '<div><span id="hudTime">Time: 5:00</span></div>' +
             '<div style="margin-top:2px;"><span id="hudTorque">Torque: 0.0</span></div>' +
+            '<div style="margin-top:2px;"><span id="hudMass">Mass: 0.0</span></div>' +
             '<div style="margin-top:2px;"><span id="hudSpeed">Speed: 0.0</span></div></div>' +
 
              '<div style="position:absolute;top:12px;left:50%;transform:translateX(-50%);font-size:14px;color:var(--hud-gen-color);text-shadow:1px 1px 2px rgba(0,0,0,0.3);">' +
@@ -54,6 +56,7 @@ const HUD = (function () {
         _timeEl = document.getElementById('hudTime');
         _torqueEl = document.getElementById('hudTorque');
         _speedEl = document.getElementById('hudSpeed');
+        _massEl = document.getElementById('hudMass');
         _tableBody = document.getElementById('hudTableBody');
         _genEl = document.getElementById('hudGen');
         _graphCanvas = document.getElementById('hudGraph');
@@ -79,6 +82,7 @@ const HUD = (function () {
         _scoreEl.textContent = 'Score: ' + world.getScore().toFixed(1);
         _timeEl.textContent = 'Time: ' + formatTime(world.getRemainingTime());
         _torqueEl.textContent = 'Torque: ' + world.getTorque().toFixed(1);
+        _massEl.textContent = 'Mass: ' + world.getMass().toFixed(1);
         _speedEl.textContent = 'Speed: ' + world.getSpeed().toFixed(1);
     }
 
