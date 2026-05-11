@@ -50,4 +50,33 @@ const WHEEL_PROB0 = 0.5;
 const MIN_WHEEL = 0.1;
 const MAX_WHEEL = 1.5;
 
+// Collision categories for physics filtering
+const CAT_CAR = 0x0001;
+const CAT_TRACK = 0x0002;
+const CAT_DEBRIS = 0x0004;
+
+// World physics constants
+const START_POS_X = -500;
+const DROP_CLEARANCE = 2.0;
+const MOTOR_SPEED = -6 * Math.PI;
+const MAX_MOTOR_TORQUE = 100;
+const SPRING_K = 7.5;
+const SPRING_DAMPING_MULT = 40;
+const SPRING_SPEED_MULT = -20;
+const LOWER_TRANSLATION = -0.1;
+const UPPER_TRANSLATION = 0.25;
+const AXLE_BOX_OFFSET_X = -0.3;
+const AXLE_BOX_OFFSET_Y = 0;
+const WHEEL_OFFSET_X = -0.5;
+const WHEEL_OFFSET_Y = 0;
+const MOUNT_BOX_HW = 0.2;
+const MOUNT_BOX_HH = 0.1;
+const AXLE_BOX_HW = 0.2;
+const AXLE_BOX_HH = 0.05;
+const SLOW_THRESHOLD_X = 1;
+const MAX_SLOW_NEAR = 300;
+const MAX_SLOW_FAR = 180;
+const DIST_THRESHOLD = 10;
+const BACKWARD_DIST = -10;
+
 // Track data: loaded asynchronously from js/track_data.bin via TrackLoader

@@ -10,7 +10,7 @@
 - Shapes are immutable.
 
 ## Modules
-**config.js** — global constants (`TIME_STEP`, `CAMERA_*`, physics params).
+**config.js** — all global constants: simulation, physics (`TIME_STEP`, `CAMERA_*`, `MOTOR_SPEED`, `SPRING_*`), collision categories (`CAT_CAR`, `CAT_TRACK`, `CAT_DEBRIS`), car geometry, stop conditions.
 **track_loader.js** — async load `track_data.bin` (Float32LE: x, y, angle × 500 segments).
 **chromosome.js** — DNA: `{ genes: Float32Array(40), colors: Array(16) }`.
 **car_builder.js** — decode genes → vertices, colors, wheels (pure functions).
@@ -32,11 +32,13 @@ Decoded via `CarBuilder.decodeChromosome()`:
 
 ## World
 - 8 triangular chassis segments on single dynamic body.
-- Suspension: `PrismaticJoint` + spring-damper motor in `step()`.
-- Wheels: `RevoluteJoint` with motor.
+- Suspension: `PrismaticJoint` + spring-damper motor in `_applySuspension()`.
+- Wheels: `RevoluteJoint` with motor in `_applyMotorTorque()`.
 - Breakage: `post-solve` impulse check on fixtures. Threshold: `BREAK_STRENGTH * fixtureMass`.
-- Stop conditions: stall, track end (1500m), time limit (5min), backward roll, destroyed (7 segments broken).
-- Collision filters (world.js): `CAR_FILTER` (cat `0x0001`, mask `0x0002\|0x0004`, group `-1`), `DEBRIS_FILTER` (cat `0x0004`, mask `0x0001\|0x0002\|0x0004`), `TRACK_FILTER` (cat `0x0002`, mask `0x0001\|0x0004`). Group `-1` disables car self-collision; debris (broken segments, axles) use `DEBRIS_FILTER` to collide with everything.
+- Stop conditions (`_checkStopConditions`): stall, track end (1500m), time limit (5min), backward roll, destroyed (7 segments broken).
+- Car assembly helpers: `_createChassisBody()`, `_createChassisFixtures()`, `_initChassisData()`, `_createWheelAssembly()`.
+- State init: `_initState()` shared between constructor and `reset()`.
+- Collision filters (world.js): `CAR_FILTER` (cat `CAT_CAR`, mask `CAT_TRACK\|CAT_DEBRIS`, group `-1`), `DEBRIS_FILTER` (cat `CAT_DEBRIS`, mask `CAT_CAR\|CAT_TRACK\|CAT_DEBRIS`), `TRACK_FILTER` (cat `CAT_TRACK`, mask `CAT_CAR\|CAT_DEBRIS`). Group `-1` disables car self-collision. Debris (broken segments, axles) use `DEBRIS_PENDING_FILTER` initially, then switch to `DEBRIS_FILTER` when clear of car.
 
 ## Population
 - POPULATION_SIZE = 32.
