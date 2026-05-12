@@ -118,6 +118,7 @@
             }
 
             _prevIndexed = indexed;
+            logUniqueness();
 
             _population.push(Chromosome.clone(indexed[0].chromo));
             _population[_population.length - 1].parents = [indexed[0].chromo];
@@ -152,6 +153,29 @@
         _carIndex = 0;
         _flagPos = null;
         _bestDist = 0;
+    }
+
+    function computeUniquenessIndex(eliteGenes, otherGenes) {
+        let diff = 0;
+        for (let i = 0; i < NUM_SEGMENTS; i++) {
+            diff += Math.abs(eliteGenes[i * 2] - otherGenes[i * 2]);
+            diff += Math.abs(eliteGenes[i * 2 + 1] - otherGenes[i * 2 + 1]);
+            const eliteBin = eliteGenes[16 + i * 3] > WHEEL_PROB0 ? 0 : 1;
+            const otherBin = otherGenes[16 + i * 3] > WHEEL_PROB0 ? 0 : 1;
+            diff += Math.abs(eliteBin - otherBin);
+        }
+        return diff;
+    }
+
+    function logUniqueness() {
+        if (_prevIndexed.length === 0) return;
+        const eliteGenes = _prevIndexed[0].chromo.genes;
+        const lines = [`=== Gen ${_generation} Uniqueness ===`];
+        for (let i = 1; i < _prevIndexed.length; i++) {
+            const idx = computeUniquenessIndex(eliteGenes, _prevIndexed[i].chromo.genes);
+            lines.push(`Car ${i}: ${idx.toFixed(4)}`);
+        }
+        console.log(lines.join('\n'));
     }
 
     function finishGeneration() {
