@@ -220,7 +220,7 @@ const Renderer = (function () {
                 ctx.lineWidth = 1;
                 ctx.strokeRect(px, py, frameW, frameH);
 
-                const geom = World.getCarGeometry(pc);
+                const geom = CarBuilder.getCarGeometry(pc);
                 ctx.save();
                 ctx.translate(px + frameW / 2, py + frameH / 2);
                 self.drawLightChassis(geom, 0, 0, pScale, 0);
