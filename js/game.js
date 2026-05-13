@@ -27,13 +27,54 @@
     });
 
     const pasteBtn = document.getElementById('pasteBtn');
-    pasteBtn.addEventListener('click', async function () {
+    const pasteDialog = document.getElementById('pasteDialog');
+    const pasteTextarea = document.getElementById('pasteTextarea');
+    const pasteError = document.getElementById('pasteError');
+    const pasteOk = document.getElementById('pasteOk');
+    const pasteCancel = document.getElementById('pasteCancel');
+
+    function openPasteDialog() {
+        pasteTextarea.value = '';
+        pasteError.style.display = 'none';
+        pasteError.textContent = '';
+        pasteDialog.classList.add('open');
+        pasteTextarea.focus();
+    }
+
+    function closePasteDialog() {
+        pasteDialog.classList.remove('open');
+    }
+
+    function doPaste() {
+        const text = pasteTextarea.value.trim();
+        if (!text) return;
         try {
-            const text = await navigator.clipboard.readText();
             const chromo = Chromosome.deserialize(text);
             const targetIdx = _carIndex + 1 < POPULATION_SIZE ? _carIndex + 1 : _carIndex;
             _population[targetIdx] = chromo;
-        } catch (_) {}
+            closePasteDialog();
+        } catch (e) {
+            pasteError.textContent = 'Invalid DNA: ' + e.message;
+            pasteError.style.display = 'block';
+        }
+    }
+
+    pasteBtn.addEventListener('click', openPasteDialog);
+    pasteOk.addEventListener('click', doPaste);
+    pasteCancel.addEventListener('click', closePasteDialog);
+    pasteDialog.addEventListener('click', function (e) {
+        if (e.target === pasteDialog) closePasteDialog();
+    });
+    pasteTextarea.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            doPaste();
+        }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && pasteDialog.classList.contains('open')) {
+            closePasteDialog();
+        }
     });
 
     let _population = [];

@@ -23,6 +23,8 @@
             --hud-winner: green;
             --hud-loser: red;
             --pause-color: blue;
+            --dialog-input-bg: #f0ede0;
+            --dialog-input-text: #111;
         }
 
         [data-theme="dark"] {
@@ -37,17 +39,67 @@
             --hud-winner: #4c4;
             --hud-loser: #f66;
             --pause-color: #6af;
+            --dialog-input-bg: #1a1a2e;
+            --dialog-input-text: #ccc;
         }
 
         body { background: var(--bg-body); }
         #themeToggle:hover, #pasteBtn:hover { opacity:0.8; }
         #themeToggle:active, #pasteBtn:active { opacity:0.6; }
+
+        .dialog-overlay {
+            display:none; position:fixed; inset:0; z-index:10000;
+            background:rgba(0,0,0,0.5);
+            align-items:center; justify-content:center;
+        }
+        .dialog-overlay.open { display:flex; }
+        .dialog-box {
+            background:var(--hud-bg); color:var(--hud-text);
+            border:1px solid var(--hud-border);
+            padding:16px; min-width:400px; max-width:90vw;
+            font-family:monospace; font-size:13px;
+        }
+        .dialog-box h3 { margin:0 0 8px 0; font-weight:normal; font-size:14px; }
+        .dialog-textarea {
+            width:100%; height:120px;
+            background:var(--dialog-input-bg); color:var(--dialog-input-text);
+            border:1px solid var(--hud-border);
+            font-family:monospace; font-size:12px; padding:6px;
+            resize:vertical; outline:none;
+        }
+        .dialog-textarea:focus { border-color:var(--hud-icon-color); }
+        .dialog-error {
+            color:#f66; font-size:11px; margin-top:4px; display:none;
+            word-break:break-all;
+        }
+        .dialog-actions { margin-top:8px; text-align:right; }
+        .dialog-btn {
+            background:var(--hud-bg); color:var(--hud-text);
+            border:1px solid var(--hud-border);
+            padding:4px 14px; cursor:pointer;
+            font-family:monospace; font-size:13px;
+            transition:opacity 0.15s;
+        }
+        .dialog-btn:hover { opacity:0.8; }
+        .dialog-btn:active { opacity:0.5; }
+        .dialog-btn + .dialog-btn { margin-left:6px; }
     </style>
 </head>
 <body>
     <button id="pasteBtn" style="position:fixed;top:8px;right:44px;z-index:9999;background:var(--hud-bg);color:var(--hud-icon-color);border:1px solid var(--hud-border);border-radius:0;padding:6px;cursor:pointer;font-size:16px;line-height:1;pointer-events:auto;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s;" title="Paste car from clipboard"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="7" y="2" width="10" height="4" rx="1" ry="1"/><polyline points="8 14 12 18 16 14"/><line x1="12" y1="10" x2="12" y2="18"/></svg></button>
     <button id="themeToggle" style="position:fixed;top:8px;right:8px;z-index:9999;background:var(--hud-bg);color:var(--hud-icon-color);border:1px solid var(--hud-border);border-radius:0;padding:6px;cursor:pointer;font-size:16px;line-height:1;pointer-events:auto;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s,transform 0.2s;" title="Toggle theme"></button>
     <canvas id="gameCanvas"></canvas>
+    <div id="pasteDialog" class="dialog-overlay">
+        <div class="dialog-box">
+            <h3>Paste car DNA:</h3>
+            <textarea id="pasteTextarea" class="dialog-textarea" spellcheck="false"></textarea>
+            <div id="pasteError" class="dialog-error"></div>
+            <div class="dialog-actions">
+                <button id="pasteOk" class="dialog-btn">OK</button>
+                <button id="pasteCancel" class="dialog-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
   <script src="js/planck.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/theme.js"></script>
