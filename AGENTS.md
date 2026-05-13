@@ -43,7 +43,12 @@ Decoded via `CarBuilder.decodeChromosome()`:
 ## Population
 - POPULATION_SIZE = 32.
 - Gen 0: random.
-- Next gens: top-1 clone (elitism) + 3 random + 28 crossover (two-point).
+- Next gens — 4-tier selection:
+  - `[0]` — clone of top-1 (elitism)
+  - `[1..3]` — fresh random cars
+  - `[4..11]` — top-4 × 4 most-unique (from top-20 of mass, uniqueness vs elite via `computeUniquenessIndex`), 2 offspring per pair → 8 cars. Unique cars highlighted blue in results table.
+  - `[12..19]` — top-4 × random mass (from remaining 24), 2 offspring per pair → 8 cars
+  - `[20..31]` — remaining 24 mass cars → 12 pairs × 1 offspring = 12 hybrids. Every car in the mass produces at least one offspring.
 
 ## Rendering
 - Canvas, scale = 32.

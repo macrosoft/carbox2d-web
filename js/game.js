@@ -137,29 +137,39 @@
             });
 
             const parentSet = new Set();
-            for (let t = 0; t < TOP_CROSS_COUNT; t++) parentSet.add(t);
+            for (let i = 0; i < 4; i++) parentSet.add(i);
 
-            const massIndices = [];
-            for (let p = TOP_CROSS_COUNT; p < POPULATION_SIZE; p++) {
-                massIndices.push(p);
+            // top 4 of mass (indexed[4..23]) — find 4 most unique vs elite
+            const uniquenessValues = [];
+            for (let i = 4; i < 24; i++) {
+                const u = computeUniquenessIndex(indexed[0].chromo.genes, indexed[i].chromo.genes);
+                uniquenessValues.push({ index: i, value: u });
             }
-            shuffle(massIndices);
+            uniquenessValues.sort(function (a, b) { return b.value - a.value; });
 
-            for (let t = 0; t < TOP_CROSS_COUNT; t++) parentSet.add(massIndices[t]);
+            const uniqueIndices = new Set();
+            for (let i = 0; i < 4; i++) {
+                const idx = uniquenessValues[i].index;
+                uniqueIndices.add(idx);
+                parentSet.add(idx);
+                indexed[idx].isUnique = true;
+            }
 
-            const remainingIndices = massIndices.slice(TOP_CROSS_COUNT);
+            // remaining mass (4..31) excluding uniques, shuffled
+            const remainingIndices = [];
+            for (let i = 4; i < POPULATION_SIZE; i++) {
+                if (!uniqueIndices.has(i)) remainingIndices.push(i);
+            }
             shuffle(remainingIndices);
-            for (let pair = 0; pair < REMAINING_PAIRS; pair++) {
-                parentSet.add(remainingIndices[pair * 2]);
-                parentSet.add(remainingIndices[pair * 2 + 1]);
-            }
+
+            const randomIndices = remainingIndices.slice(0, 4);
+            for (let i = 0; i < remainingIndices.length; i++) parentSet.add(remainingIndices[i]);
 
             for (let m = 0; m < indexed.length; m++) {
                 indexed[m].hasOffspring = parentSet.has(m);
             }
 
             _prevIndexed = indexed;
-            logUniqueness();
 
             _population.push(Chromosome.clone(indexed[0].chromo));
             _population[_population.length - 1].parents = [indexed[0].chromo];
@@ -170,9 +180,10 @@
                 _population.push(chromo);
             }
 
-            for (let t = 0; t < TOP_CROSS_COUNT; t++) {
-                const pa = indexed[t].chromo;
-                const pb = indexed[massIndices[t]].chromo;
+            const sortedUnique = [...uniqueIndices].sort(function (a, b) { return a - b; });
+            for (let i = 0; i < 4; i++) {
+                const pa = indexed[i].chromo;
+                const pb = indexed[sortedUnique[i]].chromo;
                 const result = Chromosome.crossover(pa, pb);
                 result.offspringA.parents = [pa, pb];
                 result.offspringB.parents = [pa, pb];
@@ -180,14 +191,22 @@
                 _population.push(result.offspringB);
             }
 
-            for (let pair = 0; pair < REMAINING_PAIRS; pair++) {
-                const pa = indexed[remainingIndices[pair * 2]].chromo;
-                const pb = indexed[remainingIndices[pair * 2 + 1]].chromo;
+            for (let i = 0; i < 4; i++) {
+                const pa = indexed[i].chromo;
+                const pb = indexed[randomIndices[i]].chromo;
                 const result = Chromosome.crossover(pa, pb);
                 result.offspringA.parents = [pa, pb];
                 result.offspringB.parents = [pa, pb];
                 _population.push(result.offspringA);
                 _population.push(result.offspringB);
+            }
+
+            for (let i = 0; i < remainingIndices.length; i += 2) {
+                const pa = indexed[remainingIndices[i]].chromo;
+                const pb = indexed[remainingIndices[i + 1]].chromo;
+                const result = Chromosome.crossover(pa, pb);
+                result.offspringA.parents = [pa, pb];
+                _population.push(result.offspringA);
             }
         }
         _results = [];
@@ -208,16 +227,7 @@
         return diff;
     }
 
-    function logUniqueness() {
-        if (_prevIndexed.length === 0) return;
-        const eliteGenes = _prevIndexed[0].chromo.genes;
-        const lines = [`=== Gen ${_generation} Uniqueness ===`];
-        for (let i = 1; i < _prevIndexed.length; i++) {
-            const idx = computeUniquenessIndex(eliteGenes, _prevIndexed[i].chromo.genes);
-            lines.push(`Car ${i}: ${idx.toFixed(4)}`);
-        }
-        console.log(lines.join('\n'));
-    }
+
 
     function finishGeneration() {
         const stats = calcStats(_results);

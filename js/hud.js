@@ -165,14 +165,17 @@ const HUD = (function () {
             styleEl.id = styleId;
             styleEl.textContent =
                 '.hudRowWinner{color:var(--hud-winner)!important;}' +
-                '.hudRowLoser{color:var(--hud-loser)!important;}';
+                '.hudRowLoser{color:var(--hud-loser)!important;}' +
+                '.hudRowUnique{color:var(--hud-unique)!important;}';
             document.head.appendChild(styleEl);
         }
 
         for (let i = 0; i < indexed.length; i++) {
             const item = indexed[i];
             let cls = null;
-            if (i < 4) {
+            if (item.isUnique) {
+                cls = 'hudRowUnique';
+            } else if (i < 4) {
                 cls = 'hudRowWinner';
             } else if (!item.hasOffspring) {
                 cls = 'hudRowLoser';
