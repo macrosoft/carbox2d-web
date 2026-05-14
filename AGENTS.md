@@ -54,5 +54,18 @@ Decoded via `CarBuilder.decodeChromosome()`:
 - Canvas, scale = 32.
 - Camera: X instant, Y smooth lerp with `CAMERA_Y_OFFSET = 2`.
 
+## Background Mode
+- Dual loop with Page Visibility API (`visibilitychange`):
+  - **Visible**: `requestAnimationFrame` — physics + rendering.
+  - **Hidden**: `setInterval(4ms)` — physics only, no rendering.
+- `doPhysicsStep()` in game.js: one `world.step()` + car finished/generation transition logic. Shared by both loops.
+- `runBackgroundStep()`: measures real elapsed via `performance.now()`, computes exact number of steps (`Math.round(elapsed / TIME_STEP)`), runs them in batch. Compensates for browser timer throttling.
+- Camera is snapped instantly on return via `renderer.setCamera()`.
+- **Known limitation**: `BG_MAX_DT = 10` caps catch-up per tick. If browser throttles `setInterval` to ~1/min, only 600 frames (10s) are simulated per tick instead of 3600 (60s). Simulation runs ~6× slower than real time.
+- **Fix options** (not implemented):
+  - A) Increase `BG_MAX_DT` (e.g., 300) — full speed but rAF unresponsive during catch-up.
+  - B) **Web Worker** — move physics (`world.js` + planck.js) to worker where timers are never throttled, message results back for rendering. Most reliable.
+  - C) Chunked catch-up — process 50ms worth of steps, reschedule via `setTimeout(fn, 0)`.
+
 ## Git
 - NEVER commit or push without explicit user permission.

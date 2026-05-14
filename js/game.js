@@ -254,6 +254,55 @@
 
         let lastTick = null;
         let accumulator = 0;
+        let _rafId = null;
+        let _bgIntervalId = null;
+        let _bgLastTick = 0;
+        const BG_MAX_DT = 10;
+
+        function doPhysicsStep() {
+            if (_paused) return false;
+            world.step();
+            if (world.isStopped()) {
+                handleCarFinished(world, _carIndex);
+                _carIndex++;
+                if (_carIndex >= POPULATION_SIZE) {
+                    finishGeneration();
+                    HUD.resetRuns();
+                    HUD.showResults(_prevIndexed);
+                }
+                world.reset(_population[_carIndex]);
+                renderer.setCamera(world.getChassisPos().x, world.getChassisPos().y + CAMERA_Y_OFFSET);
+                return true;
+            }
+            return false;
+        }
+
+        function runBackgroundStep() {
+            if (_paused) return;
+            const now = performance.now();
+            let elapsed = (now - _bgLastTick) / 1000;
+            _bgLastTick = now;
+            if (elapsed > BG_MAX_DT) elapsed = BG_MAX_DT;
+            const steps = Math.round(elapsed / TIME_STEP);
+            for (let i = 0; i < steps; i++) {
+                if (doPhysicsStep()) break;
+            }
+        }
+
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+                _bgLastTick = performance.now();
+                _bgIntervalId = setInterval(runBackgroundStep, 4);
+            } else {
+                if (_bgIntervalId) { clearInterval(_bgIntervalId); _bgIntervalId = null; }
+                const pos = world.getChassisPos();
+                renderer.setCamera(pos.x, pos.y + CAMERA_Y_OFFSET);
+                lastTick = null;
+                accumulator = 0;
+                _rafId = requestAnimationFrame(frame);
+            }
+        });
 
         function frame(timestamp) {
             if (lastTick === null) lastTick = timestamp;
@@ -264,27 +313,10 @@
             accumulator += dt;
 
             while (accumulator >= TIME_STEP) {
-                if (!_paused) {
-                    world.step();
-                    accumulator -= TIME_STEP;
-
-                    if (world.isStopped()) {
-                        handleCarFinished(world, _carIndex);
-                        _carIndex++;
-
-                        if (_carIndex >= POPULATION_SIZE) {
-                            finishGeneration();
-                            HUD.resetRuns();
-                            HUD.showResults(_prevIndexed);
-                        }
-
-                        world.reset(_population[_carIndex]);
-                        renderer.setCamera(world.getChassisPos().x, world.getChassisPos().y + CAMERA_Y_OFFSET);
-                        accumulator = 0;
-                        break;
-                    }
-                } else {
-                    accumulator -= TIME_STEP;
+                accumulator -= TIME_STEP;
+                if (doPhysicsStep()) {
+                    accumulator = 0;
+                    break;
                 }
             }
 
@@ -297,10 +329,10 @@
             HUD.drawGraphs(_avgScores, _maxScores);
             HUD.setPause(_paused);
 
-            requestAnimationFrame(frame);
+            _rafId = requestAnimationFrame(frame);
         }
 
-        requestAnimationFrame(frame);
+        _rafId = requestAnimationFrame(frame);
     });
 
 })();
