@@ -21,8 +21,8 @@ const HUD = (function () {
     function init() {
         _container = document.createElement('div');
         _container.style.cssText =
-            'position:absolute;' +
-            'top:0;left:0;width:100%;height:100%;' +
+            'position:fixed;' +
+            'top:0;left:0;width:100vw;height:100vh;' +
             'pointer-events:none;font-family:monospace;user-select:none;';
 
         _container.innerHTML =

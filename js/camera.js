@@ -18,8 +18,6 @@ const Camera = (function () {
         this.h = window.innerHeight;
         this.canvas.width = this.w * this.dpr;
         this.canvas.height = this.h * this.dpr;
-        this.canvas.style.width = this.w + 'px';
-        this.canvas.style.height = this.h + 'px';
     };
 
     Camera.prototype.setCamera = function (x, y) {
