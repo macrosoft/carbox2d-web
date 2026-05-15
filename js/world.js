@@ -1,9 +1,9 @@
 const World = (function () {
     'use strict';
 
-    const DEBRIS_FILTER = { filterCategoryBits: CAT_DEBRIS, filterMaskBits: CAT_CAR | CAT_TRACK | CAT_DEBRIS };
-    const DEBRIS_PENDING_FILTER = { filterCategoryBits: CAT_DEBRIS, filterMaskBits: CAT_TRACK | CAT_DEBRIS };
-    const TRACK_FILTER = { filterCategoryBits: CAT_TRACK, filterMaskBits: CAT_CAR | CAT_DEBRIS };
+    const DEBRIS_FILTER = { filterCategoryBits: Config.CAT_DEBRIS, filterMaskBits: Config.CAT_CAR | Config.CAT_TRACK | Config.CAT_DEBRIS };
+    const DEBRIS_PENDING_FILTER = { filterCategoryBits: Config.CAT_DEBRIS, filterMaskBits: Config.CAT_TRACK | Config.CAT_DEBRIS };
+    const TRACK_FILTER = { filterCategoryBits: Config.CAT_TRACK, filterMaskBits: Config.CAT_CAR | Config.CAT_DEBRIS };
 
     let _trackCount = 0;
     let _trackData = null;
@@ -15,22 +15,22 @@ const World = (function () {
 
     function calcTorque(chassis) {
         const wheelCount = chassis.wheels.filter(w => w !== null).length;
-        return chassis.getMass() * MASS_MULT / Math.pow(2, Math.max(wheelCount - 1, 0));
+        return chassis.getMass() * Config.MASS_MULT / Math.pow(2, Math.max(wheelCount - 1, 0));
     }
 
     function buildTrack(worldInstance) {
         const trackBody = worldInstance.createBody({ type: 'static', position: planck.Vec2(0, 0) });
 
         trackBody.createFixture(
-            new planck.BoxShape(10, TRACK_THICK, planck.Vec2(-513, 0), 0),
-            { density: 0, friction: TRACK_FRICTION, restitution: 0, ...TRACK_FILTER }
+            new planck.BoxShape(10, Config.TRACK_THICK, planck.Vec2(-513, 0), 0),
+            { density: 0, friction: Config.TRACK_FRICTION, restitution: 0, ...TRACK_FILTER }
         );
 
         for (let i = 0; i < _trackCount; i++) {
             const base = i * 3;
             trackBody.createFixture(
-                new planck.BoxShape(TRACK_HALF_W, TRACK_THICK, planck.Vec2(_trackData[base], _trackData[base + 1]), _trackData[base + 2]),
-                { density: 0, friction: TRACK_FRICTION, restitution: 0, ...TRACK_FILTER }
+                new planck.BoxShape(Config.TRACK_HALF_W, Config.TRACK_THICK, planck.Vec2(_trackData[base], _trackData[base + 1]), _trackData[base + 2]),
+                { density: 0, friction: Config.TRACK_FRICTION, restitution: 0, ...TRACK_FILTER }
             );
         }
 
@@ -54,7 +54,7 @@ const World = (function () {
 
     function initPhysics(worldInstance) {
         worldInstance.world = new planck.World({
-            gravity: planck.Vec2(0, GRAVITY),
+            gravity: planck.Vec2(0, Config.GRAVITY),
             continuousPhysics: true,
             autoClearForces: true
         });
@@ -66,7 +66,7 @@ const World = (function () {
         this.chromo = chromo;
         initPhysics(this);
         this.chassis = CarFactory.createCar(this.world, chromo);
-        this.startPos = planck.Vec2(START_POS_X, CarFactory.computeDropY(chromo));
+        this.startPos = planck.Vec2(Config.START_POS_X, CarFactory.computeDropY(chromo));
         this.iteration = 0;
         this.maxPosition = 0;
         this.furthestPos = null;
@@ -82,8 +82,8 @@ const World = (function () {
 
     function World(chromo) {
         this._initState(chromo);
-        this.TRACK_LENGTH = TRACK_LENGTH;
-        this.MAX_ITERATION = TIME_LIMIT * 60;
+        this.TRACK_LENGTH = Config.TRACK_LENGTH;
+        this.MAX_ITERATION = Config.TIME_LIMIT * 60;
     }
 
     World.prototype.reset = function (newChromo) {
@@ -109,7 +109,7 @@ const World = (function () {
 
                 if (this.chassis.segFixtures[segIdx]) {
                     const mass = getFixtureMass(fixture);
-                    const strength = BREAK_STRENGTH * mass;
+                    const strength = Config.BREAK_STRENGTH * mass;
                     if (strength < maxImpulse) {
                         this.chassis.segmentBreakFlags[segIdx] = true;
                     }
@@ -121,7 +121,7 @@ const World = (function () {
                 fixtureColor = this.chassis.axleColors ? this.chassis.axleColors[wheelIdx] : null;
 
                 const mass = getFixtureMass(fixture);
-                const strength = BREAK_STRENGTH * mass;
+                const strength = Config.BREAK_STRENGTH * mass;
                 if (strength < maxImpulse) {
                     this.chassis.axleBreakFlags[wheelIdx] = true;
                 }
@@ -160,12 +160,12 @@ const World = (function () {
         if (slot) {
             slot.body.destroyFixture(slot.fixture);
             const axleDebrisFixt = slot.body.createFixture(
-                new planck.BoxShape(AXLE_BOX_HW, AXLE_BOX_HH, planck.Vec2(AXLE_BOX_OFFSET_X, AXLE_BOX_OFFSET_Y), 0),
-                { density: 20, friction: TRACK_FRICTION, restitution: 0.05, ...DEBRIS_PENDING_FILTER }
+                new planck.BoxShape(Config.AXLE_BOX_HW, Config.AXLE_BOX_HH, planck.Vec2(Config.AXLE_BOX_OFFSET_X, Config.AXLE_BOX_OFFSET_Y), 0),
+                { density: 20, friction: Config.TRACK_FRICTION, restitution: 0.05, ...DEBRIS_PENDING_FILTER }
             );
             const mountDebrisFixt = slot.body.createFixture(
-                new planck.BoxShape(MOUNT_BOX_HW, MOUNT_BOX_HH, planck.Vec2(0, 0), 0),
-                { density: 2, friction: TRACK_FRICTION, restitution: 0.05, ...DEBRIS_PENDING_FILTER }
+                new planck.BoxShape(Config.MOUNT_BOX_HW, Config.MOUNT_BOX_HH, planck.Vec2(0, 0), 0),
+                { density: 2, friction: Config.TRACK_FRICTION, restitution: 0.05, ...DEBRIS_PENDING_FILTER }
             );
             this.debrisPending.push({ fixture: axleDebrisFixt, body: slot.body, nextStep: 0 });
             this.debrisPending.push({ fixture: mountDebrisFixt, body: slot.body, nextStep: 0 });
@@ -182,11 +182,11 @@ const World = (function () {
 
     World.prototype.recalcTorque = function () {
         const activeWheels = this.chassis.wheelActive.filter(a => a).length;
-        this.torque = this.chassis.getMass() * MASS_MULT / Math.pow(2, Math.max(activeWheels - 1, 0));
+        this.torque = this.chassis.getMass() * Config.MASS_MULT / Math.pow(2, Math.max(activeWheels - 1, 0));
     };
 
     World.prototype.addSparksList = function (impulses, pos, color) {
-        if (impulses > SPARK_IMPULSE_THRESHOLD) {
+        if (impulses > Config.SPARK_IMPULSE_THRESHOLD) {
             const count = Math.min(Math.floor(impulses / 4), 32);
             this.sparkList.push({ count, pos: planck.Vec2(pos.x, pos.y), color });
         }
@@ -199,7 +199,7 @@ const World = (function () {
         while (this.sparkList.length > 0) {
             const entry = this.sparkList.shift();
             for (let i = 0; i < entry.count; i++) {
-                if (this.sparks.length >= MAX_SPARK_COUNT) continue;
+                if (this.sparks.length >= Config.MAX_SPARK_COUNT) continue;
 
                 const hw = prng.next() / 30 + 0.02;
                 const hh = prng.next() / 30 + 0.02;
@@ -213,8 +213,8 @@ const World = (function () {
                 body.createFixture(new planck.BoxShape(hw, hh), {
                     density: 0.5,
                     restitution: 0.7,
-                    filterCategoryBits: CAT_CAR | CAT_TRACK,
-                    filterMaskBits: CAT_TRACK,
+                    filterCategoryBits: Config.CAT_CAR | Config.CAT_TRACK,
+                    filterMaskBits: Config.CAT_TRACK,
                     filterGroupIndex: -1
                 });
 
@@ -260,7 +260,7 @@ const World = (function () {
             angle: angle,
             allowSleep: false
         });
-        const debrisFixt = debrisBody.createFixture(shape, { density: 2, friction: TRACK_FRICTION, restitution: 0.05, ...DEBRIS_PENDING_FILTER });
+        const debrisFixt = debrisBody.createFixture(shape, { density: 2, friction: Config.TRACK_FRICTION, restitution: 0.05, ...DEBRIS_PENDING_FILTER });
         this.debrisPending.push({ fixture: debrisFixt, body: debrisBody, nextStep: 0 });
         debrisBody.setLinearVelocity(vel);
 
@@ -278,11 +278,11 @@ const World = (function () {
     World.prototype.processBreakage = function () {
         const chassis = this.chassis;
 
-        for (let i = 0; i < NUM_SEGMENTS; i++) {
+        for (let i = 0; i < Config.NUM_SEGMENTS; i++) {
             if (!chassis.segmentBreakFlags[i]) continue;
             chassis.segmentBreakFlags[i] = false;
             if (!chassis.segFixtures[i]) continue;
-            if (chassis.brokeNum >= MAX_BROKEN) continue;
+            if (chassis.brokeNum >= Config.MAX_BROKEN) continue;
             this.breakSegment(i);
         }
 
@@ -311,7 +311,7 @@ const World = (function () {
 
             const pendingAABB = entry.fixture.getAABB(0);
             let overlap = false;
-            for (let i = 0; i < NUM_SEGMENTS; i++) {
+            for (let i = 0; i < Config.NUM_SEGMENTS; i++) {
                 const sf = chassis.segFixtures[i];
                 if (!sf) continue;
                 if (aabbOverlap(pendingAABB, sf.getAABB(0))) {
@@ -330,7 +330,7 @@ const World = (function () {
                 }
             }
             if (!overlap) {
-                entry.fixture.setFilterData({ categoryBits: CAT_DEBRIS, maskBits: CAT_CAR | CAT_TRACK | CAT_DEBRIS, groupIndex: 0 });
+                entry.fixture.setFilterData({ categoryBits: Config.CAT_DEBRIS, maskBits: Config.CAT_CAR | Config.CAT_TRACK | Config.CAT_DEBRIS, groupIndex: 0 });
                 this.debrisPending.splice(d, 1);
             }
         }
@@ -346,13 +346,13 @@ const World = (function () {
     };
 
     World.prototype._applySuspension = function () {
-        const baseSpringForce = SPRING_K * this.chassis.getMass();
+        const baseSpringForce = Config.SPRING_K * this.chassis.getMass();
         for (let i = 0; i < this.chassis.springs.length; i++) {
             const joint = this.chassis.springs[i];
             if (!joint) continue;
             const translation = joint.getJointTranslation();
-            joint.setMaxMotorForce(baseSpringForce + SPRING_DAMPING_MULT * baseSpringForce * translation * translation);
-            joint.setMotorSpeed(SPRING_SPEED_MULT * translation);
+            joint.setMaxMotorForce(baseSpringForce + Config.SPRING_DAMPING_MULT * baseSpringForce * translation * translation);
+            joint.setMotorSpeed(Config.SPRING_SPEED_MULT * translation);
         }
     };
 
@@ -371,25 +371,25 @@ const World = (function () {
             this.prevDist = dist;
         } else {
             const vel = this.chassis.getLinearVelocity();
-            if (vel.x < SLOW_THRESHOLD_X) this.slow++;
+            if (vel.x < Config.SLOW_THRESHOLD_X) this.slow++;
         }
     };
 
     World.prototype._checkStopConditions = function () {
         const dist = this.chassis.getPosition().x - this.startPos.x;
-        const maxSlow = dist > DIST_THRESHOLD ? MAX_SLOW_NEAR : MAX_SLOW_FAR;
+        const maxSlow = dist > Config.DIST_THRESHOLD ? Config.MAX_SLOW_NEAR : Config.MAX_SLOW_FAR;
         return this.slow >= maxSlow
             || dist >= this.TRACK_LENGTH
             || this.iteration > this.MAX_ITERATION
-            || dist < BACKWARD_DIST
-            || this.chassis.brokeNum >= MAX_BROKEN;
+            || dist < Config.BACKWARD_DIST
+            || this.chassis.brokeNum >= Config.MAX_BROKEN;
     };
 
     World.prototype.step = function () {
         this._applyMotorTorque();
         this._applySuspension();
 
-        this.world.step(TIME_STEP, VELOCITY_ITERATIONS, POSITION_ITERATIONS);
+        this.world.step(Config.TIME_STEP, Config.VELOCITY_ITERATIONS, Config.POSITION_ITERATIONS);
         this.processBreakage();
         this.processPendingDebris();
         this.updateSparks();

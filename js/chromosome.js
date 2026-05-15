@@ -6,22 +6,22 @@ const Chromosome = (function () {
     function generate() {
         const genes = new Float32Array(GENES_SIZE);
 
-        for (let i = 0; i < NUM_SEGMENTS; i++) {
+        for (let i = 0; i < Config.NUM_SEGMENTS; i++) {
             genes[i * 2] = Math.random();
             genes[i * 2 + 1] = Math.random();
         }
 
-        for (let i = 0; i < NUM_SEGMENTS; i++) {
+        for (let i = 0; i < Config.NUM_SEGMENTS; i++) {
             genes[16 + i * 3] = Math.random();
             genes[16 + i * 3 + 1] = Math.random();
             genes[16 + i * 3 + 2] = Math.random();
         }
 
-        const r = Math.floor(Math.random() * COLOR_RANGE);
-        const g = Math.floor(Math.random() * COLOR_RANGE);
-        const b = Math.floor(Math.random() * COLOR_RANGE);
+        const r = Math.floor(Math.random() * Config.COLOR_RANGE);
+        const g = Math.floor(Math.random() * Config.COLOR_RANGE);
+        const b = Math.floor(Math.random() * Config.COLOR_RANGE);
         const colors = [];
-        for (let i = 0; i < NUM_COLORS; i++) {
+        for (let i = 0; i < Config.NUM_COLORS; i++) {
             colors.push([r, g, b]);
         }
 
@@ -63,7 +63,7 @@ const Chromosome = (function () {
         const genesB = new Float32Array(GENES_SIZE);
         const colorsA = [];
         const colorsB = [];
-        for (let i = 0; i < NUM_COLORS; i++) {
+        for (let i = 0; i < Config.NUM_COLORS; i++) {
             colorsA.push([0, 0, 0]);
             colorsB.push([0, 0, 0]);
         }
@@ -99,7 +99,7 @@ const Chromosome = (function () {
         const genes = new Float32Array(GENES_SIZE);
         genes.set(chromo.genes);
         const colors = [];
-        for (let i = 0; i < NUM_COLORS; i++) {
+        for (let i = 0; i < Config.NUM_COLORS; i++) {
             colors.push([chromo.colors[i][0], chromo.colors[i][1], chromo.colors[i][2]]);
         }
         return { genes: genes, colors: colors };
@@ -136,7 +136,7 @@ const Chromosome = (function () {
 
     function decodeColors(str) {
         const out = [];
-        for (let i = 0; i < NUM_COLORS; i++) {
+        for (let i = 0; i < Config.NUM_COLORS; i++) {
             const hex = str.substring(i * 6, i * 6 + 6);
             const r = parseInt(hex.substring(0, 2), 16);
             const g = parseInt(hex.substring(2, 4), 16);

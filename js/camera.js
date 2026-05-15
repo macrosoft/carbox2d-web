@@ -29,12 +29,12 @@ const Camera = (function () {
 
     Camera.prototype.follow = function (x, y) {
         this.targetX = x;
-        this.targetY = y + CAMERA_Y_OFFSET;
+        this.targetY = y + Config.CAMERA_Y_OFFSET;
     };
 
     Camera.prototype.updateCamera = function () {
         this.cameraX = this.targetX;
-        this.cameraY += (this.targetY - this.cameraY) * CAMERA_SMOOTH;
+        this.cameraY += (this.targetY - this.cameraY) * Config.CAMERA_SMOOTH;
     };
 
     Camera.prototype.getTransform = function (scale) {

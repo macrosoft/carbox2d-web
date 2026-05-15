@@ -7,15 +7,15 @@ const CarBuilder = (function () {
 
         const rawAngles = [];
         let sum = 0;
-        for (let i = 0; i < NUM_SEGMENTS; i++) {
-            const rawAngle = genes[i * 2] * (1 - MIN_ANGLE) + MIN_ANGLE;
+        for (let i = 0; i < Config.NUM_SEGMENTS; i++) {
+            const rawAngle = genes[i * 2] * (1 - Config.MIN_ANGLE) + Config.MIN_ANGLE;
             rawAngles.push(rawAngle);
             sum += rawAngle;
-            mags.push(genes[i * 2 + 1] * (MAX_MAG - MIN_MAG) + MIN_MAG);
+            mags.push(genes[i * 2 + 1] * (Config.MAX_MAG - Config.MIN_MAG) + Config.MIN_MAG);
         }
 
         let cumulative = 0;
-        for (let i = 0; i < NUM_SEGMENTS; i++) {
+        for (let i = 0; i < Config.NUM_SEGMENTS; i++) {
             angles.push(cumulative);
             cumulative += (rawAngles[i] / sum) * 2 * Math.PI;
         }
@@ -24,15 +24,15 @@ const CarBuilder = (function () {
         const axleAngles = [];
         const wheelRadii = [];
 
-        for (let i = 0; i < NUM_SEGMENTS; i++) {
+        for (let i = 0; i < Config.NUM_SEGMENTS; i++) {
             const woGene = genes[16 + i * 3];
-            if (woGene > WHEEL_PROB0) {
+            if (woGene > Config.WHEEL_PROB0) {
                 wheelOn.push(-1);
             } else {
                 wheelOn.push(i);
             }
             axleAngles.push(genes[16 + i * 3 + 1] * 2 * Math.PI);
-            wheelRadii.push(genes[16 + i * 3 + 2] * (MAX_WHEEL - MIN_WHEEL) + MIN_WHEEL);
+            wheelRadii.push(genes[16 + i * 3 + 2] * (Config.MAX_WHEEL - Config.MIN_WHEEL) + Config.MIN_WHEEL);
         }
 
         return { angles, mags, wheelOn, axleAngles, wheelRadii };
@@ -49,11 +49,11 @@ const CarBuilder = (function () {
 
     function computeCarData(chromo) {
         const decoded = decodeChromosome(chromo.genes);
-        const segColors = makeRgbStrings(chromo.colors, 0, NUM_SEGMENTS);
-        const axleColors = makeRgbStrings(chromo.colors, NUM_SEGMENTS, NUM_SEGMENTS);
+        const segColors = makeRgbStrings(chromo.colors, 0, Config.NUM_SEGMENTS);
+        const axleColors = makeRgbStrings(chromo.colors, Config.NUM_SEGMENTS, Config.NUM_SEGMENTS);
 
         const vertices = [[0, 0]];
-        for (let i = 0; i < NUM_SEGMENTS; i++) {
+        for (let i = 0; i < Config.NUM_SEGMENTS; i++) {
             vertices.push([
                 decoded.mags[i] * Math.cos(decoded.angles[i]),
                 decoded.mags[i] * Math.sin(decoded.angles[i])

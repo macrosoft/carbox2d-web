@@ -50,7 +50,7 @@
         if (!text) return;
         try {
             const chromo = Chromosome.deserialize(text);
-            const targetIdx = _carIndex + 1 < POPULATION_SIZE ? _carIndex + 1 : _carIndex;
+            const targetIdx = _carIndex + 1 < Config.POPULATION_SIZE ? _carIndex + 1 : _carIndex;
             _population[targetIdx] = chromo;
             closePasteDialog();
         } catch (e) {
@@ -121,14 +121,14 @@
         _prevIndexed = [];
 
         if (_generation === 0) {
-            for (let i = 0; i < POPULATION_SIZE; i++) {
+            for (let i = 0; i < Config.POPULATION_SIZE; i++) {
                 const chromo = Chromosome.generate();
                 chromo.parents = null;
                 _population.push(chromo);
             }
         } else {
             const indexed = [];
-            for (let k = 0; k < POPULATION_SIZE; k++) {
+            for (let k = 0; k < Config.POPULATION_SIZE; k++) {
                 indexed.push({ chromo: prevPopulation[k], score: prevResults[k].score, time: prevResults[k].time, origIndex: k });
             }
             indexed.sort(function (a, b) {
@@ -157,7 +157,7 @@
 
             // remaining mass (4..31) excluding uniques, shuffled
             const remainingIndices = [];
-            for (let i = 4; i < POPULATION_SIZE; i++) {
+            for (let i = 4; i < Config.POPULATION_SIZE; i++) {
                 if (!uniqueIndices.has(i)) remainingIndices.push(i);
             }
             shuffle(remainingIndices);
@@ -175,7 +175,7 @@
             _population.push(Chromosome.clone(indexed[0].chromo));
             _population[_population.length - 1].parents = [indexed[0].chromo];
 
-            for (let n = 0; n < RANDOM_COUNT; n++) {
+            for (let n = 0; n < Config.RANDOM_COUNT; n++) {
                 const chromo = Chromosome.generate();
                 chromo.parents = null;
                 _population.push(chromo);
@@ -218,11 +218,11 @@
 
     function computeUniquenessIndex(eliteGenes, otherGenes) {
         let diff = 0;
-        for (let i = 0; i < NUM_SEGMENTS; i++) {
+        for (let i = 0; i < Config.NUM_SEGMENTS; i++) {
             diff += Math.abs(eliteGenes[i * 2] - otherGenes[i * 2]);
             diff += Math.abs(eliteGenes[i * 2 + 1] - otherGenes[i * 2 + 1]);
-            const eliteBin = eliteGenes[16 + i * 3] > WHEEL_PROB0 ? 0 : 1;
-            const otherBin = otherGenes[16 + i * 3] > WHEEL_PROB0 ? 0 : 1;
+            const eliteBin = eliteGenes[16 + i * 3] > Config.WHEEL_PROB0 ? 0 : 1;
+            const otherBin = otherGenes[16 + i * 3] > Config.WHEEL_PROB0 ? 0 : 1;
             diff += Math.abs(eliteBin - otherBin);
         }
         return diff;
@@ -251,7 +251,7 @@
 
         startGeneration();
         let world = new World.World(_population[0]);
-        renderer.setCamera(world.getChassisPos().x, world.getChassisPos().y + CAMERA_Y_OFFSET);
+        renderer.setCamera(world.getChassisPos().x, world.getChassisPos().y + Config.CAMERA_Y_OFFSET);
 
         let lastTick = null;
         let accumulator = 0;
@@ -266,13 +266,13 @@
             if (world.isStopped()) {
                 handleCarFinished(world, _carIndex);
                 _carIndex++;
-                if (_carIndex >= POPULATION_SIZE) {
+                if (_carIndex >= Config.POPULATION_SIZE) {
                     finishGeneration();
                     HUD.resetRuns();
                     HUD.showResults(_prevIndexed);
                 }
                 world.reset(_population[_carIndex]);
-                renderer.setCamera(world.getChassisPos().x, world.getChassisPos().y + CAMERA_Y_OFFSET);
+                renderer.setCamera(world.getChassisPos().x, world.getChassisPos().y + Config.CAMERA_Y_OFFSET);
                 return true;
             }
             return false;
@@ -284,7 +284,7 @@
             let elapsed = (now - _bgLastTick) / 1000;
             _bgLastTick = now;
             if (elapsed > BG_MAX_DT) elapsed = BG_MAX_DT;
-            const steps = Math.round(elapsed / TIME_STEP);
+            const steps = Math.round(elapsed / Config.TIME_STEP);
             for (let i = 0; i < steps; i++) {
                 if (doPhysicsStep()) break;
             }
@@ -298,7 +298,7 @@
             } else {
                 if (_bgIntervalId) { clearInterval(_bgIntervalId); _bgIntervalId = null; }
                 const pos = world.getChassisPos();
-                renderer.setCamera(pos.x, pos.y + CAMERA_Y_OFFSET);
+                renderer.setCamera(pos.x, pos.y + Config.CAMERA_Y_OFFSET);
                 lastTick = null;
                 accumulator = 0;
                 _rafId = requestAnimationFrame(frame);
@@ -310,11 +310,11 @@
             let dt = (timestamp - lastTick) / 1000;
             lastTick = timestamp;
 
-            if (dt > MAX_DT) dt = MAX_DT;
+            if (dt > Config.MAX_DT) dt = Config.MAX_DT;
             accumulator += dt;
 
-            while (accumulator >= TIME_STEP) {
-                accumulator -= TIME_STEP;
+            while (accumulator >= Config.TIME_STEP) {
+                accumulator -= Config.TIME_STEP;
                 if (doPhysicsStep()) {
                     accumulator = 0;
                     break;

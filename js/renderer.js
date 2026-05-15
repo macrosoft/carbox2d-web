@@ -127,7 +127,7 @@ const Renderer = (function () {
             ctx.lineTo(vv1[0] * scale, -vv1[1] * scale);
             ctx.lineTo(vv2[0] * scale, -vv2[1] * scale);
             ctx.closePath();
-            ctx.fillStyle = vCol.replace('rgb', 'rgba').replace(')', ',' + RGBA_ALPHA + ')');
+            ctx.fillStyle = vCol.replace('rgb', 'rgba').replace(')', ',' + Config.RGBA_ALPHA + ')');
             ctx.fill();
             ctx.strokeStyle = vCol;
             ctx.stroke();
@@ -145,7 +145,7 @@ const Renderer = (function () {
               h     = this.camera.h,
               camX  = this.camera.cameraX,
               camY  = this.camera.cameraY,
-              scale = CAMERA_SCALE;
+              scale = Config.CAMERA_SCALE;
 
         const cx = camX * scale;
         const cy = camY * scale;
@@ -184,11 +184,11 @@ const Renderer = (function () {
         ctx.lineWidth = 0.5;
         ctx.strokeStyle = _getColors().line;
 
-        drawRotRect(ctx, toX, toY, scale, -513, 0, 0, 10, TRACK_THICK);
+        drawRotRect(ctx, toX, toY, scale, -513, 0, 0, 10, Config.TRACK_THICK);
 
         for (let i = 0; i < _trackCount; i++) {
             const base = i * 3;
-            drawRotRect(ctx, toX, toY, scale, _trackData[base], _trackData[base + 1], _trackData[base + 2], TRACK_HALF_W, TRACK_THICK);
+            drawRotRect(ctx, toX, toY, scale, _trackData[base], _trackData[base + 1], _trackData[base + 2], Config.TRACK_HALF_W, Config.TRACK_THICK);
         }
 
         if (this.flagPos) {
@@ -337,7 +337,7 @@ const Renderer = (function () {
                 ctx.lineTo(v1[0] * scale, -v1[1] * scale);
                 ctx.lineTo(v2[0] * scale, -v2[1] * scale);
                 ctx.closePath();
-                ctx.fillStyle = col.replace('rgb', 'rgba').replace(')', ',' + RGBA_ALPHA + ')');
+                ctx.fillStyle = col.replace('rgb', 'rgba').replace(')', ',' + Config.RGBA_ALPHA + ')');
                 ctx.fill();
                 ctx.strokeStyle = col;
                 ctx.stroke();
@@ -357,7 +357,7 @@ const Renderer = (function () {
                     ctx.lineTo(mShape.m_vertices[vIdx].x * scale, -mShape.m_vertices[vIdx].y * scale);
                 }
                 ctx.closePath();
-                ctx.fillStyle = mountCol.replace('rgb', 'rgba').replace(')', ',' + RGBA_ALPHA + ')');
+                ctx.fillStyle = mountCol.replace('rgb', 'rgba').replace(')', ',' + Config.RGBA_ALPHA + ')');
                 ctx.fill();
                 ctx.strokeStyle = mountCol;
                 ctx.stroke();
@@ -393,7 +393,7 @@ const Renderer = (function () {
                     ctx.lineTo(verts[v].x * scale, -verts[v].y * scale);
                 }
                 ctx.closePath();
-                ctx.fillStyle = color.replace('rgb', 'rgba').replace(')', ',' + RGBA_ALPHA + ')');
+                ctx.fillStyle = color.replace('rgb', 'rgba').replace(')', ',' + Config.RGBA_ALPHA + ')');
                 ctx.fill();
                 ctx.strokeStyle = color;
                 ctx.stroke();
@@ -423,7 +423,7 @@ const Renderer = (function () {
                 const shape = fix.getShape();
                 if (shape.m_vertices) {
                     const verts = shape.m_vertices;
-                    ctx.fillStyle = color.replace('rgb', 'rgba').replace(')', ',' + RGBA_ALPHA + ')');
+                    ctx.fillStyle = color.replace('rgb', 'rgba').replace(')', ',' + Config.RGBA_ALPHA + ')');
                     ctx.beginPath();
                     ctx.moveTo(verts[0].x * scale, -verts[0].y * scale);
                     for (let v = 1; v < verts.length; v++) {
@@ -448,13 +448,13 @@ const Renderer = (function () {
             const ca = _trackData[base + 2];
             const cosA = Math.cos(ca);
             const sinA = Math.sin(ca);
-            const x1 = cx - cosA * TRACK_HALF_W - sinA * TRACK_THICK;
-            const x2 = cx + cosA * TRACK_HALF_W - sinA * TRACK_THICK;
+            const x1 = cx - cosA * Config.TRACK_HALF_W - sinA * Config.TRACK_THICK;
+            const x2 = cx + cosA * Config.TRACK_HALF_W - sinA * Config.TRACK_THICK;
             if (wx >= Math.min(x1, x2) && wx <= Math.max(x1, x2)) {
                 const lx = Math.abs(cosA) > 1e-8
-                    ? (wx - cx + sinA * TRACK_THICK) / cosA
+                    ? (wx - cx + sinA * Config.TRACK_THICK) / cosA
                     : 0;
-                const wy2 = cy + sinA * lx + cosA * TRACK_THICK;
+                const wy2 = cy + sinA * lx + cosA * Config.TRACK_THICK;
                 if (groundY === null || wy2 > groundY) {
                     groundY = wy2;
                 }
@@ -469,7 +469,7 @@ const Renderer = (function () {
                 if (d < bestDist) {
                     bestDist = d;
                     const ca = _trackData[base + 2];
-                    groundY = _trackData[base + 1] + Math.cos(ca) * TRACK_THICK;
+                    groundY = _trackData[base + 1] + Math.cos(ca) * Config.TRACK_THICK;
                 }
             }
         }

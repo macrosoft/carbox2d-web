@@ -1,8 +1,8 @@
 ## Syntax & Module Pattern
 - ES6+ syntax: `const`/`let`, arrow functions, template literals.
 - IIFE + revealing module pattern: `const Module = (function(){ ... })();`
-- `'use strict'` at top of each IIFE (except config.js).
-- Named constants at module scope (no magic numbers).
+- `'use strict'` at top of each IIFE.
+- All constants in `Config` namespace (`Config.*`).
 - Script loading order: planck.min.js → config.js → theme.js → track_loader.js → chromosome.js → car_builder.js → car_factory.js → prng.js → world.js → hud.js → camera.js → renderer.js → game.js.
 
 ## Physics (Planck.js)

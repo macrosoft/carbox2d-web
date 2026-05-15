@@ -1,7 +1,7 @@
 const CarFactory = (function () {
     'use strict';
 
-    const CAR_FILTER = { filterCategoryBits: CAT_CAR, filterMaskBits: CAT_TRACK | CAT_DEBRIS, filterGroupIndex: -1 };
+    const CAR_FILTER = { filterCategoryBits: Config.CAT_CAR, filterMaskBits: Config.CAT_TRACK | Config.CAT_DEBRIS, filterGroupIndex: -1 };
 
     function computeDropY(chromo) {
         const { vertices, wheels } = CarBuilder.computeCarData(chromo);
@@ -19,13 +19,13 @@ const CarFactory = (function () {
                 }
             }
         }
-        return TRACK_THICK + DROP_CLEARANCE - minLocalY;
+        return Config.TRACK_THICK + Config.DROP_CLEARANCE - minLocalY;
     }
 
     function _createChassisBody(worldInstance, chromo) {
         return worldInstance.createBody({
             type: 'dynamic',
-            position: planck.Vec2(START_POS_X, computeDropY(chromo)),
+            position: planck.Vec2(Config.START_POS_X, computeDropY(chromo)),
             allowSleep: false,
             bullet: true
         });
@@ -34,8 +34,8 @@ const CarFactory = (function () {
     function _createChassisFixtures(chassis, vertices) {
         const segFixtures = [];
         const segShapes = [];
-        for (let i = 0; i < NUM_SEGMENTS; i++) {
-            const ni = (i + 1) % NUM_SEGMENTS;
+        for (let i = 0; i < Config.NUM_SEGMENTS; i++) {
+            const ni = (i + 1) % Config.NUM_SEGMENTS;
             const p1x = vertices[i + 1][0];
             const p1y = vertices[i + 1][1];
             const p2x = vertices[ni + 1][0];
@@ -43,7 +43,7 @@ const CarFactory = (function () {
 
             const fixture = chassis.createFixture(
                 new planck.PolygonShape([planck.Vec2(0, 0), planck.Vec2(p1x, p1y), planck.Vec2(p2x, p2y)]),
-                { density: 2, friction: TRACK_FRICTION, restitution: 0.05, ...CAR_FILTER }
+                { density: 2, friction: Config.TRACK_FRICTION, restitution: 0.05, ...CAR_FILTER }
             );
             fixture.segmentIndex = i;
             segFixtures.push(fixture);
@@ -65,7 +65,7 @@ const CarFactory = (function () {
         chassis.vertices = vertices;
         chassis.debris = [];
         chassis.brokeNum = 0;
-        chassis.segmentBreakFlags = new Array(NUM_SEGMENTS).fill(false);
+        chassis.segmentBreakFlags = new Array(Config.NUM_SEGMENTS).fill(false);
         chassis.wheelOnSegment = [];
         chassis.segFixtures = segFixtures;
         chassis.segShapes = segShapes;
@@ -90,8 +90,8 @@ const CarFactory = (function () {
         const axleAngle = decoded.axleAngles[i];
 
         const mountFixture = chassis.createFixture(
-            new planck.BoxShape(MOUNT_BOX_HW, MOUNT_BOX_HH, planck.Vec2(px, py), axleAngle),
-            { density: 2, friction: TRACK_FRICTION, restitution: 0.05, ...CAR_FILTER }
+            new planck.BoxShape(Config.MOUNT_BOX_HW, Config.MOUNT_BOX_HH, planck.Vec2(px, py), axleAngle),
+            { density: 2, friction: Config.TRACK_FRICTION, restitution: 0.05, ...CAR_FILTER }
         );
         mountFixture.axleMount = true;
         mountFixture.wheelIndex = i;
@@ -109,8 +109,8 @@ const CarFactory = (function () {
         });
 
         const axleFixture = axleBody.createFixture(
-            new planck.BoxShape(AXLE_BOX_HW, AXLE_BOX_HH, planck.Vec2(AXLE_BOX_OFFSET_X, AXLE_BOX_OFFSET_Y), 0),
-            { density: 20, friction: TRACK_FRICTION, restitution: 0.05, ...CAR_FILTER }
+            new planck.BoxShape(Config.AXLE_BOX_HW, Config.AXLE_BOX_HH, planck.Vec2(Config.AXLE_BOX_OFFSET_X, Config.AXLE_BOX_OFFSET_Y), 0),
+            { density: 20, friction: Config.TRACK_FRICTION, restitution: 0.05, ...CAR_FILTER }
         );
         axleFixture.axleBodyFixture = true;
         axleFixture.wheelIndex = i;
@@ -126,8 +126,8 @@ const CarFactory = (function () {
         });
 
         const joint = worldInstance.createJoint(new planck.PrismaticJoint({
-            lowerTranslation: LOWER_TRANSLATION,
-            upperTranslation: UPPER_TRANSLATION,
+            lowerTranslation: Config.LOWER_TRANSLATION,
+            upperTranslation: Config.UPPER_TRANSLATION,
             enableLimit: true,
             enableMotor: true,
             collideConnected: false
@@ -137,7 +137,7 @@ const CarFactory = (function () {
         chassis.springs.push(joint);
 
         const wheelRadius = decoded.wheelRadii[i];
-        const wheelWorldPos = axleBody.getWorldPoint(planck.Vec2(WHEEL_OFFSET_X, WHEEL_OFFSET_Y));
+        const wheelWorldPos = axleBody.getWorldPoint(planck.Vec2(Config.WHEEL_OFFSET_X, Config.WHEEL_OFFSET_Y));
 
         const wheelBody = worldInstance.createBody({
             type: 'dynamic',
@@ -146,7 +146,7 @@ const CarFactory = (function () {
         });
         wheelBody.createFixture(
             new planck.CircleShape(wheelRadius),
-            { density: 0.5, friction: TRACK_FRICTION, restitution: 0.1, ...CAR_FILTER }
+            { density: 0.5, friction: Config.TRACK_FRICTION, restitution: 0.1, ...CAR_FILTER }
         );
 
         const wheelJoint = worldInstance.createJoint(new planck.RevoluteJoint({
@@ -154,8 +154,8 @@ const CarFactory = (function () {
             collideConnected: false
         }, axleBody, wheelBody, wheelWorldPos));
 
-        wheelJoint.setMotorSpeed(MOTOR_SPEED);
-        wheelJoint.setMaxMotorTorque(MAX_MOTOR_TORQUE);
+        wheelJoint.setMotorSpeed(Config.MOTOR_SPEED);
+        wheelJoint.setMaxMotorTorque(Config.MAX_MOTOR_TORQUE);
 
         chassis.wheels.push({ body: wheelBody, joint: wheelJoint, radius: wheelRadius });
     }
