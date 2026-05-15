@@ -175,7 +175,7 @@ const HUD = (function () {
             let cls = null;
             if (item.isUnique) {
                 cls = 'hudRowUnique';
-            } else if (i < 4) {
+            } else if (item.isElite) {
                 cls = 'hudRowWinner';
             } else if (!item.hasOffspring) {
                 cls = 'hudRowLoser';

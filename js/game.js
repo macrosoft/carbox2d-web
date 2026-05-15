@@ -129,7 +129,7 @@
         } else {
             const indexed = [];
             for (let k = 0; k < POPULATION_SIZE; k++) {
-                indexed.push({ chromo: prevPopulation[k], score: prevResults[k].score, time: prevResults[k].time });
+                indexed.push({ chromo: prevPopulation[k], score: prevResults[k].score, time: prevResults[k].time, origIndex: k });
             }
             indexed.sort(function (a, b) {
                 if (b.score !== a.score) return b.score - a.score;
@@ -167,9 +167,10 @@
 
             for (let m = 0; m < indexed.length; m++) {
                 indexed[m].hasOffspring = parentSet.has(m);
+                indexed[m].isElite = m < 4;
             }
 
-            _prevIndexed = indexed;
+            _prevIndexed = indexed.slice().sort(function (a, b) { return a.origIndex - b.origIndex; });
 
             _population.push(Chromosome.clone(indexed[0].chromo));
             _population[_population.length - 1].parents = [indexed[0].chromo];
