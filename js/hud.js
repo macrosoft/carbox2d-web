@@ -214,7 +214,7 @@ const HUD = (function () {
 
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
-        ctx.lineWidth = 3; 
+        ctx.lineWidth = 1; 
 
         function drawLine(data, color) {
             ctx.beginPath();
