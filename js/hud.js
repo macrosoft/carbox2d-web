@@ -203,25 +203,27 @@ const HUD = (function () {
         const w = _graphCanvas.width;
         const h = _graphCanvas.height;
 
-        ctx.clearRect(0, 0, w, h);
+        const padding = 5;
+        const graphW = w - padding * 2;
+        const graphH = h - padding * 2;
 
+        ctx.clearRect(0, 0, w, h);
         if (avgScores.length < 2) return;
 
-        let maxVal = 0;
-        for (let i = 0; i < maxScores.length; i++) {
-            if (maxScores[i] > maxVal) maxVal = maxScores[i];
-        }
-        if (maxVal === 0) maxVal = 1;
+        let maxVal = Math.max(...maxScores, 1);
 
-        const stepX = w / Math.max(1, avgScores.length - 1);
-        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 3; 
 
         function drawLine(data, color) {
             ctx.beginPath();
             ctx.strokeStyle = color;
+            
             for (let i = 0; i < data.length; i++) {
-                const x = i * stepX;
-                const y = h - (data[i] / maxVal) * h;
+                const x = padding + (i / (data.length - 1)) * graphW;
+                const y = (h - padding) - (data[i] / maxVal) * graphH;
+                
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }
